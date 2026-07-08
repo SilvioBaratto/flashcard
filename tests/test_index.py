@@ -210,7 +210,12 @@ def test_when_searching_any_corpus_then_scores_are_returned_in_descending_order(
     idx = _index_from_rows(rows)
     results = idx.search(np.array(query_row, dtype=float), k=n)
     scores = [m.score for m in results]
-    assert scores == sorted(scores, reverse=True)
+    # Non-increasing within float tolerance: search() tie-breaks near-equal
+    # cosine scores by chunk_id, so raw .score values can differ by ~1 ULP across
+    # platforms (arm64 vs x64). Exact `== sorted(...)` is too strict for near-ties.
+    assert all(a >= b - 1e-9 for a, b in zip(scores, scores[1:])), (
+        f"scores not descending within tolerance: {scores}"
+    )
 
 
 @given(n=_N, d=_DIM, data=st.data())

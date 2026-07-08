@@ -48,7 +48,11 @@ def _cli_help() -> str:
     from typer.testing import CliRunner
     from flashcard.cli import app
 
-    result = CliRunner().invoke(app, ["--help"])
+    # Force a wide terminal: Rich truncates long option names in the --help panel
+    # when the terminal is narrow, and CI runners report a very small width (~20
+    # cols), which hides flags. A fixed wide width verifies the flags are defined
+    # regardless of the runner's terminal size.
+    result = CliRunner().invoke(app, ["--help"], env={"COLUMNS": "200"})
     return result.output
 
 
