@@ -1,0 +1,1599 @@
+MERIDIAN CLOUD PLATFORM
+Technical Reference Manual
+Version 4.2 — Effective Date: January 2026
+
+Issued by Meridian Technologies Inc.
+1200 Innovation Drive, Suite 800, Austin, TX 78701
+support.meridiancloud.com | docs.meridiancloud.com | status.meridiancloud.com
+
+This document is the authoritative technical reference for all customers, administrators,
+developers, and operations personnel using Meridian Cloud Platform (MCP) services.
+It supersedes all earlier versions of the Meridian Technical Reference Manual.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TABLE OF CONTENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Section 1   Introduction and Platform Overview
+Section 2   Account Management and Authentication
+Section 3   Storage Services (MCP-OBJ)
+Section 4   Compute Services (MCP-VM)
+Section 5   Database Services (MCP-RDS)
+Section 6   Networking and Content Delivery
+Section 7   Security and Compliance Controls
+Section 8   Billing and Cost Management
+Section 9   Service Level Agreements
+Section 10  Disaster Recovery and Business Continuity
+Section 11  API Reference
+Section 12  Support and Incident Management
+Section 13  Compliance and Data Governance
+Section 14  Troubleshooting Guide
+Section 15  Glossary of Terms
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1: INTRODUCTION AND PLATFORM OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1.1 About Meridian Cloud Platform
+
+Meridian Cloud Platform (MCP) is a comprehensive cloud infrastructure service that provides
+organizations of all sizes with scalable, secure, and highly reliable computing resources.
+Originally launched in 2018 as a regional compute provider, MCP has grown into a full-stack
+cloud offering serving over 40,000 enterprise customers across 32 countries. The platform
+spans nine global Availability Zones organized into five geographic Regions covering North
+America, Europe, and the Asia-Pacific corridor.
+
+MCP is engineered on three core principles: operational transparency, predictable economics,
+and security by default. Every pricing schedule, SLA commitment, and security configuration
+default is documented in this manual and in the companion MCP Policy Reference (separate
+publication). Wherever terms in this manual appear in italics on first use, their definitions
+can be found in Section 15 (Glossary of Terms).
+
+1.2 Platform Architecture
+
+MCP is organized into three layers:
+
+Core Infrastructure Layer
+The physical foundation of MCP: servers, network switches, optical interconnects, and
+storage arrays owned and operated exclusively by Meridian Technologies Inc. Customers
+interact with this layer only indirectly; it is fully managed by Meridian's operations
+teams and is continuously monitored via the internal Meridian Operations Center (MOC)
+operating 24 hours a day, 365 days a year.
+
+Platform Services Layer
+The virtualization, orchestration, and data-plane layer that exposes compute, storage,
+networking, and database primitives to customers via the MCP Control Plane API (see
+Section 11 for full API specifications). Platform Services are the primary interface
+for programmatic access, automation, and integration with third-party tools. All
+operations available in the MCP Web Console are also available programmatically via
+the Control Plane API.
+
+Managed Application Layer
+Optional higher-level services — including managed Kubernetes clusters (MCP-K8s),
+managed relational databases (MCP-RDS), and global content delivery (MCP-CDN) —
+built on top of Platform Services. These services are provisioned through the same
+Control Plane API or through the MCP Web Console. Managed Application services
+include software lifecycle management (patching, minor version upgrades, failover)
+performed by Meridian on the customer's behalf.
+
+1.3 Global Infrastructure: Regions and Availability Zones
+
+MCP operates nine Availability Zones (AZs) grouped into five Regions:
+
+  Region Name       | Code      | Availability Zones
+  ─────────────────────────────────────────────────────
+  US East (Primary) | us-east-1 | AZ-USE1, AZ-USE2
+  US West           | us-west-1 | AZ-USW1, AZ-USW2
+  EU Central        | eu-cent-1 | AZ-EUC1, AZ-EUC2
+  EU West           | eu-west-1 | AZ-EUW1
+  Asia Pacific      | ap-pac-1  | AZ-APC1, AZ-APC2
+
+Each Availability Zone is housed in a physically distinct data center building, connected
+to its sibling AZs within the same Region over redundant dark fiber paths. Network
+round-trip latency between AZs in the same Region is typically 1–4 ms at the 50th
+percentile and below 8 ms at the 99th percentile. Inter-Region latency is higher and
+depends on geography; US↔EU links typically fall in the 85–130 ms range, while
+US↔Asia-Pacific links range from 140 to 200 ms.
+
+All nine AZs share a common network backbone operated by Meridian. Cross-AZ and
+cross-Region data transfer rates are published in Section 8 (Billing and Cost
+Management).
+
+1.4 Service Tiers
+
+MCP offers four service tiers designed to address different organizational scales and
+compliance requirements:
+
+Starter Tier
+Intended for small teams, individual developers, and proof-of-concept workloads.
+Includes 500 GB of MCP-OBJ object storage, 4 virtual CPUs (vCPUs), 16 GB of RAM
+allocated across on-demand instances, and 1 TB of monthly outbound data transfer.
+No minimum commitment. Priced at $149 per month. No formal Service Level Agreement
+is provided on the Starter tier; service is delivered on a best-effort basis.
+
+Professional Tier
+For growing organizations with production workloads requiring reliability guarantees.
+Includes 2 TB of object storage, 16 vCPUs available for on-demand use, 64 GB RAM,
+5 TB monthly data transfer, and access to all managed services. Requires a 12-month
+minimum commitment. Baseline price $799 per month. Full SLA schedule applies — see
+Section 9 for details.
+
+Enterprise Tier
+For large-scale, mission-critical deployments. Includes 5 TB of object storage,
+64 vCPUs, 256 GB RAM, 20 TB monthly data transfer, a dedicated 10 Gbps network egress
+port, and a named Technical Account Manager (TAM). Custom pricing with volume discounts;
+the baseline starting price is $4,500 per month. Full SLA schedule with enhanced credit
+percentages applies. See Section 9 for the Enterprise SLA schedule.
+
+Enterprise Plus Tier
+For organizations in compliance-intensive industries such as financial services,
+healthcare, and government. Includes everything in Enterprise, plus dedicated hardware
+tenancy (no shared physical hosts), FIPS 140-2 Level 3 hardware security modules for
+key management, quarterly compliance audit reports, and a minimum 99.995% uptime SLA
+on core compute and storage services. Custom pricing; contact the Meridian Enterprise
+Sales team at enterprise@meridiancloud.com.
+
+1.5 How This Manual Is Organized
+
+Each section of this manual corresponds to a major product area or operational concern.
+Cross-references between sections are explicit and formatted as "see Section N" or
+"refer to Section N". All pricing referenced in feature sections (e.g., the storage
+overage rates in Section 3) are defined in detail in Section 8; all SLA credit
+percentages referenced in feature sections are defined in Section 9. Reading the
+manual front-to-back is recommended for new administrators; experienced operators may
+jump directly to the relevant section using the Table of Contents.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2: ACCOUNT MANAGEMENT AND AUTHENTICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2.1 Account Hierarchy
+
+Every MCP account is structured in a three-level hierarchy:
+
+Root Account
+The master account created when an organization subscribes to MCP. The Root Account
+holder has unrestricted access to all resources, all billing information, and all
+sub-account management functions. Best practice strongly recommends using the Root
+Account exclusively for billing administration and organizational setup tasks. Create
+one or more IAM Admin sub-accounts (see below) for all day-to-day operational work,
+and protect the Root Account credentials with the strongest available authentication
+method. See Section 7.4 for the principle of least privilege guidelines.
+
+Sub-Accounts (IAM Users)
+Created within a Root Account and managed through the Identity and Access Management
+(IAM) module. Sub-accounts are scoped to specific resource groups and permission sets
+defined by MCP Policy Language (MPL) documents. The maximum number of sub-accounts
+varies by tier: 10 (Starter), 50 (Professional), 250 (Enterprise and Enterprise Plus).
+
+Service Accounts
+Machine-readable credential sets — API key pairs or short-lived JWT tokens — associated
+with a specific application or automation workload. Service Accounts cannot log into
+the MCP Web Console and cannot be designated as billing contacts. They must carry the
+minimum required permissions, following the principle of least privilege as described
+in Section 7.4 (Principle of Least Privilege). Service Account API keys should be
+rotated every 90 days; see Section 2.2 for key rotation instructions.
+
+2.2 Authentication Methods
+
+MCP supports four distinct authentication mechanisms, listed in descending order of
+security strength:
+
+Hardware Security Key (FIDO2/WebAuthn)
+Requires physical interaction with a registered hardware authenticator device, such as
+a YubiKey 5 NFC, Google Titan Security Key, or any other FIDO2/WebAuthn-compliant
+device. This method is the most phishing-resistant option available. It is required
+for Root Account logins on Enterprise Plus tier and is optionally available on
+Enterprise. If a hardware key is lost or unavailable, a backup TOTP code may be used
+after verifying identity through the MCP Security Verification Process (contact support
+for details). Hardware keys must be registered before they can be used; a maximum of
+five hardware keys may be registered per user account.
+
+Time-Based One-Time Password (TOTP)
+Compatible with any RFC 6238-compliant authenticator application, including Google
+Authenticator, Authy, Microsoft Authenticator, and 1Password. TOTP codes are 6 digits
+and valid for 30 seconds. MCP accepts codes up to 60 seconds past their generation
+time to accommodate minor clock drift. TOTP is required for all non-service-account
+logins on Professional and Enterprise tiers, and is optional (but strongly recommended)
+on Starter tier.
+
+Single Sign-On via SAML 2.0 or OIDC
+Delegates authentication entirely to your organization's Identity Provider (IdP) such
+as Okta, Azure Active Directory, or Ping Identity. When SSO is configured, users do
+not set a separate MCP password; they authenticate through the IdP's login flow and
+receive a session token from MCP upon successful IdP verification. SSO is supported
+on Professional, Enterprise, and Enterprise Plus. Detailed IdP configuration
+instructions, attribute mapping requirements, and troubleshooting guidance are
+contained in the separate MCP IAM Administrator Guide.
+
+API Key Pair (Access Key ID + Secret Access Key)
+Used exclusively by Service Accounts and programmatic access via the SDK or direct
+API calls. The Secret Access Key is displayed only once at creation time and cannot
+be retrieved afterward; it must be stored securely in a secrets management system
+(e.g., Vault, AWS Secrets Manager, or a similarly robust tool). If a key is lost,
+it must be revoked and a new pair generated. API keys should be rotated on a 90-day
+schedule. MCP provides an automated rotation reminder: when an API key is 75 days
+old, a rotation reminder is sent to the security notification contacts on the account.
+
+2.3 IAM Policies and the MCP Policy Language (MPL)
+
+Access control within MCP follows an Attribute-Based Access Control (ABAC) model.
+Permissions are expressed in MCP Policy Language (MPL), a JSON-based syntax. Each
+MPL policy document contains one or more statements, and each statement comprises:
+
+  Effect       : "Allow" or "Deny". A Deny statement always takes precedence over an
+                 Allow statement, regardless of the order of evaluation.
+  Principal    : The Sub-Account or Service Account identifier the statement governs.
+                 May use wildcards to match patterns.
+  Action       : The API action(s) the statement governs, expressed in the format
+                 "service:Action" (e.g., "storage:PutObject", "compute:LaunchInstance",
+                 "iam:CreateUser"). Wildcards are supported: "storage:*" permits all
+                 storage actions.
+  Resource     : The specific resource ARN(s) or wildcard patterns the statement covers.
+                 Example: "arn:mcp:storage:us-east-1::my-bucket/logs/*" scopes a policy
+                 to the "logs/" prefix within the bucket "my-bucket".
+  Condition    : Optional predicates that further constrain when the statement applies.
+                 Supported condition operators include: IpAddress, NotIpAddress,
+                 DateGreaterThan, DateLessThan, StringEquals, StringLike, Bool (for
+                 checking whether MFA was used), and more.
+
+Policy evaluation order: Explicit Deny → Explicit Allow → Implicit Deny. Any API call
+not explicitly permitted by at least one matching Allow statement is denied. Policies
+are evaluated in full; there is no short-circuit once the first Allow is found,
+because a subsequent Deny statement may override it.
+
+2.4 Multi-Factor Authentication (MFA) Requirements
+
+MFA enforcement rules by tier:
+
+  Starter      : MFA is optional. The console will prompt users to enable it but does
+                 not block login if it is absent.
+  Professional : MFA is required for Root Account console logins. Sub-account logins
+                 should enable MFA; MFA enforcement on sub-accounts is at the account
+                 administrator's discretion.
+  Enterprise   : MFA is required for all console logins (Root and all Sub-Accounts).
+                 Service Accounts are exempt as they cannot log into the console.
+  Enterprise Plus: MFA is required for all console logins and must be hardware-key-based
+                 for Root Account and any Sub-Account with IAM administrator permissions.
+
+If an account administrator disables the MFA enforcement policy for a tier that mandates
+it, MCP logs a configuration-risk event and sends a security notification to all security
+contacts on the account within one hour. Disabling MFA enforcement on Enterprise or
+Enterprise Plus may affect compliance attestations. Refer to Section 13.3 for the impact
+on SOC 2 and ISO 27001 attestation status.
+
+2.5 Session Management and Token Lifecycle
+
+Console sessions expire after 12 hours of inactivity. The inactivity timer resets on
+each user interaction (mouse click, form submission, API call through the console).
+After expiry, the user must re-authenticate.
+
+JWT tokens issued for API access have a configurable Time-To-Live (TTL) between
+15 minutes (minimum) and 60 minutes (maximum), with a default of 30 minutes. The MCP
+SDK automatically refreshes tokens before expiry when the session has not exceeded
+its maximum lifetime (8 hours). After 8 hours, the SDK requires explicit
+re-authentication.
+
+API key pairs issued to Service Accounts do not expire automatically but carry a
+recommended rotation period of 90 days. An account-level policy can enforce mandatory
+key rotation by blocking API calls from keys older than a configurable threshold.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3: STORAGE SERVICES (MCP-OBJ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3.1 Object Storage Overview
+
+MCP-OBJ is the platform's primary unstructured data store. It is an Amazon S3-compatible
+object storage service, meaning any tool or library that speaks the S3 API can interact
+with MCP-OBJ without code changes beyond the endpoint URL and credential configuration.
+MCP-OBJ is organized into Buckets, logical containers whose names must be globally unique
+within a Region and must comply with DNS naming rules (lowercase alphanumeric characters
+and hyphens only; 3–63 characters; must not begin or end with a hyphen).
+
+Objects within a bucket may be up to 5 TB in size individually. A single PUT operation
+(simple upload) supports objects up to 5 GB. Objects larger than 5 GB must be uploaded
+using the Multipart Upload API, described in Section 11.3. Objects are identified by
+a key, which is an arbitrary UTF-8 string up to 1,024 bytes; the key functions as a
+file path and may contain "/" characters to simulate a directory hierarchy.
+
+3.2 Storage Quotas by Service Tier
+
+Each service tier includes a base storage quota for MCP-OBJ. Storage usage above the
+tier-included quota incurs overage charges, whose rates are defined in Section 8.2
+(Storage Overage Billing). The included quotas are:
+
+  Starter Tier      :    500 GB included object storage
+  Professional Tier :      2 TB included object storage
+  Enterprise Tier   :      5 TB included object storage
+  Enterprise Plus   : Custom quota, negotiated per Order Form
+
+Storage usage is measured as the sum of all object sizes across all buckets in the
+account within the Region. Object metadata, bucket-level configuration objects, and
+multipart upload parts all count toward storage usage.
+
+Notification Thresholds and the 72-Hour Grace Period
+
+When an account's storage consumption approaches or exceeds its included quota, MCP
+delivers automated alerts via email (to the billing contact) and to any configured
+operational notification channels (Slack, PagerDuty, OpsGenie, or generic webhook).
+The notification schedule is:
+
+  80% of quota   : Informational alert. No action required; monitor usage trends.
+  95% of quota   : Warning alert. Recommend reducing usage or upgrading the tier.
+  100% of quota  : Critical alert. A 72-hour grace period begins at the moment the
+                   quota is reached. During the grace period, write operations (PUT,
+                   COPY, Multipart Upload Complete) continue to succeed. The account
+                   accrues overage charges from the instant the quota was exceeded.
+  Grace period expiry: If the account's storage usage has not dropped below the quota
+                   within 72 hours of first exceeding it, new write operations will
+                   be throttled. Throttled PUTs return HTTP 507 Insufficient Storage.
+                   Read operations (GET, HEAD, LIST) are never throttled.
+
+For the per-GB overage billing rates that apply during and after the grace period,
+including the exact rates for each tier and the billing proration rules, see Section 8.2.
+For the SLA credit that applies if MCP fails to deliver the 72-hour grace period on time,
+see Section 9.2.
+
+NOTE — SPANNING ANSWER 1:
+  The question "What happens when an Enterprise customer exceeds their 5 TB storage
+  quota, including the grace period behavior and the per-GB monthly overage charge?"
+  requires combining Section 3.2 (quota limits, notification schedule, and grace period)
+  with Section 8.2 (the $0.019/GB overage rate for Enterprise and the proration rules).
+  A retriever that finds only one of these sections will produce an incomplete answer.
+
+3.3 Storage Classes
+
+MCP-OBJ provides four storage classes optimized for distinct access frequency and
+cost profiles. The durability of all classes is eleven nines (99.999999999%), achieved
+through automatic three-way replication across all Availability Zones within the Region:
+
+Standard Storage Class
+Designed for frequently accessed data where retrieval latency must be minimal and
+there is no minimum storage duration. This is the default storage class when no
+other class is specified at upload time. Monthly availability: 99.99%. Retrieved
+at full speed; no per-GB retrieval fee. All tiers' included storage quotas are
+denominated in Standard class storage. Standard storage is required for active
+working data, CDN origin objects, and objects that need to be modified frequently.
+
+Standard-IA (Infrequent Access) Storage Class
+For data accessed less than once per month on average. Availability: 99.9% monthly.
+Minimum storage duration: 30 days (objects deleted or transitioned before 30 days
+are charged for a full 30-day period). Retrieval fee: $0.01 per GB. Priced at
+approximately 60% of the Standard class monthly storage rate. Appropriate for
+backups of active data, regulatory archives that require periodic retrieval, and
+files older than 30 days that are rarely requested.
+
+Archive Storage Class
+For data accessed at most a few times per year. Availability: 99.5% monthly.
+Minimum storage duration: 90 days. Before an archived object can be read, it must
+be restored to Standard class. Restoration options: Standard Restore (3–12 hours;
+$0.03/GB fee) or Expedited Restore (1–5 hours; $0.09/GB fee). See Section 8.4
+for restore fee details and Section 10.3 for the Restore API. Priced at
+approximately 25% of the Standard class rate.
+
+Archive Deep Storage Class
+For compliance-mandated data that must be retained for years and accessed only under
+audit or legal discovery scenarios. Availability: 99.0% monthly. Minimum storage
+duration: 180 days. Restoration via Bulk Restore only (12–48 hours; $0.0025/GB fee).
+Objects in Archive Deep cannot be read without an active restore job. Priced at
+approximately 10% of Standard class rate. This is the most cost-effective storage
+class for cold compliance archives.
+
+Transitioning objects between storage classes is automatic when Lifecycle Rules are
+configured (see Section 3.6). Manual reclassification is performed via a COPY
+operation specifying the desired storage class in the x-mcp-storage-class header.
+
+3.4 Bucket Versioning and Object Locking
+
+Versioning
+Bucket versioning is an optional per-bucket feature that, when enabled, retains all
+previous versions of every object in the bucket. Each version is assigned a unique
+VersionId string. Overwriting an existing key creates a new version with a new VersionId;
+it does not delete the previous version. Deleting an object key (without specifying a
+VersionId) places a Delete Marker on the key, making the object invisible to standard
+GET requests that do not specify a VersionId — the underlying data is not removed.
+
+To permanently delete a specific version, an authorized caller must issue a DELETE
+request that specifies the VersionId. This requires the
+storage:DeleteObjectVersion permission, which is distinct from the basic
+storage:DeleteObject permission. Versioning cannot be disabled once enabled; it can
+only be suspended (new writes are unversioned; existing versions are retained).
+
+Object Locking (WORM — Write Once Read Many)
+Object Locking is available on Enterprise and Enterprise Plus tiers. When enabled on
+a bucket, it prevents any version of an object from being overwritten or deleted for
+the duration of a configurable lock period. Two lock modes are available:
+
+  Governance Mode: An IAM user holding the storage:BypassGovernanceLock permission
+  can override the lock and delete the object before the retention date expires.
+  This mode is suitable for internal retention policies where an administrator may
+  need to make exceptions.
+
+  Compliance Mode: No user — including the Root Account — can delete or overwrite a
+  locked object before its retention date. Compliance mode is irreversible for the
+  duration of the lock period. This mode satisfies requirements from regulations such
+  as SEC Rule 17a-4, FINRA, and certain HIPAA documentation controls.
+
+Object Locking interacts with the backup and disaster recovery capabilities described
+in Section 10 (Disaster Recovery and Business Continuity). A locked object in
+Compliance mode cannot be removed even during cross-Region replication conflicts.
+
+3.5 Cross-Origin Resource Sharing (CORS)
+
+CORS rules can be defined at the bucket level to permit web applications served from
+different origins to access bucket contents via browser-based JavaScript. A CORS rule
+specifies:
+  - AllowedOrigins : A list of origin URLs (e.g., "https://app.example.com") or
+                     wildcards ("*" permits any origin).
+  - AllowedMethods : Which HTTP methods are permitted (GET, PUT, POST, DELETE, HEAD).
+  - AllowedHeaders : Which request headers browsers may include.
+  - MaxAgeSeconds  : How long browsers may cache the preflight response (0–86400 seconds;
+                     default 0 means no caching).
+  - ExposeHeaders  : Which response headers browsers are permitted to access.
+
+MCP evaluates CORS rules in order; the first rule whose AllowedOrigins and AllowedMethods
+match the incoming request is applied. If no rule matches, the request is served without
+CORS headers, and the browser will block it under the same-origin policy. CORS rules
+apply only to browser-originated requests; server-to-server API calls are not affected.
+
+3.6 Lifecycle Rules for Automated Storage Management
+
+Lifecycle Rules allow account administrators to define policies that automatically
+transition objects to cheaper storage classes or delete them based on age, prefix, or
+object tag filters. A Lifecycle Rule comprises:
+
+  Filter       : A prefix (e.g., "logs/"), an object tag (e.g., project=alpha), or a
+                 combination. An empty filter applies the rule to all objects in the bucket.
+  Transitions  : One or more transition actions, each specifying a target storage class
+                 and a transition trigger (Days since object creation or Days since
+                 becoming a non-current version).
+  Expiration   : An optional expiration action that permanently deletes objects or removes
+                 non-current versions after a specified number of days.
+
+Example Lifecycle Rule for a log archive pipeline:
+  1. Transition objects with prefix "logs/" from Standard to Standard-IA after 30 days.
+  2. Transition those objects from Standard-IA to Archive after a further 60 days.
+  3. Delete Archive objects after 730 days (2 years).
+  4. Delete non-current versions older than 7 days, keeping the 3 most recent.
+
+Lifecycle Rules are processed once per day at 00:00 UTC. Rule changes become effective
+within 24 hours of being saved. Transitions are not instantaneous; a batch process
+evaluates eligibility and moves objects in the background; objects are available for
+reads throughout the transition.
+
+3.7 Storage Service SLA Reference
+
+MCP-OBJ Standard class is covered by the Regional Storage SLA with a 99.99% monthly
+uptime commitment. Standard-IA carries a 99.9% SLA. Archive and Archive Deep each
+carry a 99.5% availability SLA (measured as the ability to initiate a restore request).
+
+When MCP-OBJ does not meet these thresholds in a calendar month, Meridian Technologies
+issues service credits to the affected customer. For the complete credit schedule —
+including the percentage of monthly charges credited for each tier of downtime, the
+claim submission deadline, and the claims process — see Section 9.2.
+
+NOTE — SPANNING ANSWER 2:
+  The question "What SLA credit percentage applies to an MCP-OBJ Standard outage lasting
+  between 1 and 4 hours, and what is the process for submitting a credit claim?" requires
+  combining Section 3.7 (which establishes which SLA tier applies to Standard storage
+  and refers to Section 9.2) with Section 9.2 (which defines the actual credit percentages
+  for the Regional Storage SLA and the full claims procedure). A retriever finding only
+  Section 3.7 will know there is a credit but will not know the percentage or the process.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4: COMPUTE SERVICES (MCP-VM)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4.1 Virtual Machine Instance Families
+
+MCP-VM provides on-demand virtual machines in five instance families, each optimized
+for a different workload class:
+
+General Purpose (g-series)
+A balanced vCPU-to-RAM ratio of 1:4. Suitable for the widest variety of workloads
+including web servers, application servers, CI/CD build agents, and development
+environments. Sizes range from g1.nano (0.5 vCPU, 2 GB RAM) through g6.48xlarge
+(192 vCPUs, 768 GB RAM). The g-series is the recommended starting point for teams
+that have not yet profiled their workload.
+
+Compute Optimized (c-series)
+High vCPU:RAM ratio (1:2). Intended for CPU-bound workloads such as batch data
+processing, scientific simulations, game server hosting, and high-throughput API
+services. Sizes from c1.medium (2 vCPU, 4 GB RAM) to c6.32xlarge (128 vCPU, 256 GB
+RAM). Compute Optimized instances are priced at approximately 85% of General Purpose
+cost per vCPU-hour because of their leaner RAM allocation.
+
+Memory Optimized (m-series)
+Low vCPU:RAM ratio (1:8 to 1:16). For in-memory caches (Redis, Memcached), large
+relational databases, real-time streaming analytics, and any workload whose bottleneck
+is available RAM. Sizes from m2.large (4 vCPU, 32 GB RAM) to m5.16xlarge (64 vCPU,
+1 TB RAM). Extended memory sizes beyond 256 GB require a 30-day advance reservation
+request via the MCP Capacity Planning portal.
+
+Storage Optimized (s-series)
+Local NVMe SSD storage is attached directly to the physical host, providing the highest
+available sequential and random I/O throughput. Storage Optimized instances are
+appropriate for distributed analytics engines (Spark, Flink), high-performance search
+indexes (Elasticsearch, OpenSearch), and NoSQL databases where local disk speed is the
+primary constraint. Because local NVMe storage is ephemeral (lost if the instance is
+stopped or terminated), stateful workloads using s-series instances must replicate data
+externally (to MCP-OBJ or MCP-RDS). See Section 5 for database options.
+
+GPU Accelerated (gpu-series)
+NVIDIA A100 (40 GB VRAM) and H100 (80 GB VRAM) GPUs for machine learning training,
+large-scale inference, graphics rendering, and high-performance computing. Sizes from
+gpu1.1x (1 A100) to gpu4.8x (8 H100s, 640 GB combined VRAM). GPU instances are
+available only in AZ-USE1, AZ-USW1, AZ-EUC1, and AZ-APC1. Advance reservation is
+strongly recommended for gpu3.x and larger; on-demand capacity is not guaranteed.
+
+4.2 Pricing Models for Compute
+
+MCP-VM instances are priced per second, billed with a 60-second minimum. Three pricing
+models are available:
+
+On-Demand
+Pay per second with no commitment. The most flexible option; the most expensive.
+Suitable for unpredictable workloads, development environments, and initial
+capacity sizing before committing to a long-term plan.
+
+Reserved Instances (RI)
+A 1-year or 3-year commitment to use a specific instance type in a specific AZ.
+Provides a 30% discount (1-year) or 50% discount (3-year) off On-Demand rates.
+Reserved Instance commitments are non-cancellable and non-refundable, but may be
+modified (to a different AZ within the same Region or to a larger instance type)
+once per quarter.
+
+Spot Instances
+Unused Meridian capacity offered at 70–90% below On-Demand pricing. Spot Instances
+may be preempted with a 2-minute warning when Meridian needs the capacity for
+On-Demand or Reserved customers. Suitable for fault-tolerant, stateless workloads:
+batch jobs, CI pipelines, rendering tasks. Never use Spot Instances for stateful
+single-instance databases or interactive user-facing services without robust
+checkpointing and rescheduling logic.
+
+4.3 Persistent Block Storage (MCP-Block)
+
+Each MCP-VM instance has ephemeral local storage for its root OS volume; this storage
+is lost when the instance is stopped, terminated, or live-migrated. For persistent data,
+attach one or more MCP-Block volumes:
+
+  Standard Block (sb-type)       : Magnetic-backed; up to 16 TB per volume; max 500 IOPS.
+                                   Suited for sequential workloads: log ingestion, cold data.
+  SSD Block (ssdb-type)          : Flash-backed; up to 16 TB per volume; max 64,000 IOPS.
+                                   Suited for general databases and application data.
+  Provisioned IOPS (piops-type)  : SSD with guaranteed IOPS allocation from 1,000 to
+                                   256,000 IOPS. Required for demanding OLTP databases.
+                                   Priced by both storage size and provisioned IOPS.
+
+MCP-Block volumes are AZ-local: a volume in AZ-USE1 can only be attached to an instance
+in AZ-USE1. To move data across AZs, snapshot the volume and restore the snapshot in
+the target AZ. Snapshot creation incurs no downtime; the volume remains readable and
+writable during the snapshot process.
+
+4.4 Auto-Scaling Groups
+
+MCP Auto-Scaling Groups (ASGs) automatically adjust the number of running instances
+in a group to match demand. Scaling policies:
+
+  Target Tracking: Define a metric target (e.g., "keep average CPU utilization at 60%").
+  MCP continuously monitors the metric and scales out (adds instances) or scales in
+  (removes instances) to approach the target.
+
+  Step Scaling: Define multiple scaling steps keyed to metric thresholds (e.g., "when
+  CPU > 70% for 5 minutes, add 2 instances; when CPU > 90% for 2 minutes, add 5
+  instances"). Allows non-linear scaling responses to demand spikes.
+
+  Scheduled Scaling: Pre-provision capacity at known high-traffic windows. Example:
+  "add 20 instances every Friday at 17:00 UTC and remove them at 23:00 UTC." Scheduled
+  scaling is evaluated before metric-based scaling in each period.
+
+Scale-out events are triggered within 60 seconds of a metric threshold breach and new
+instances are typically available within 90 seconds using pre-built platform images.
+Scale-in events observe a default cooldown period of 300 seconds to avoid capacity
+thrashing. The cooldown can be adjusted per ASG.
+
+4.5 Instance Lifecycle and Connectivity
+
+Instances launched in a VPC subnet (see Section 6 for network configuration) receive a
+private IP from the subnet's CIDR block. Internet-accessible instances additionally
+receive a public IP or an Elastic IP (a static, account-owned public IP that persists
+across instance replacement). Instances in private subnets reach the internet through
+a NAT Gateway.
+
+An instance in a running state can be: restarted (soft reboot; 5–60 seconds); stopped
+(OS shutdown; restartable; ephemeral local disk cleared); or terminated (irreversible;
+all ephemeral storage and the root block device are deleted unless "DeleteOnTermination"
+is set to false for attached MCP-Block volumes).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5: DATABASE SERVICES (MCP-RDS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5.1 Managed Relational Databases
+
+MCP-RDS is a fully managed relational database service supporting PostgreSQL 14/15/16,
+MySQL 8.0/8.4, and MariaDB 10.11. Meridian manages OS patching, minor version upgrades,
+automated backups, and multi-AZ replication. The customer manages schema design,
+application logic, query optimization, and major version upgrades.
+
+5.2 Instance Classes
+
+MCP-RDS instances are available in the same g, c, and m families as MCP-VM but are
+designated db.g1.small through db.m5.8xlarge to distinguish them from standalone VM
+instances. RDS instances include attached SSD Block storage for the database volume;
+the storage type (ssdb or piops) is selected at creation time and can be modified
+with a maintenance window.
+
+5.3 Multi-AZ Deployments
+
+For production RDS instances, multi-AZ deployment is strongly recommended. In multi-AZ
+mode, a synchronous standby replica is maintained in a second AZ. In the event of a
+primary instance failure (hardware fault, AZ outage, or planned maintenance), MCP
+promotes the standby to primary automatically; typical failover takes 60–120 seconds.
+The application reconnects via the RDS Endpoint hostname, which is updated in DNS
+during the failover; no IP address change is visible to the application.
+
+5.4 Read Replicas
+
+Up to 5 Read Replicas can be created per primary RDS instance, each in any AZ or Region
+within the same account. Read Replicas receive asynchronous replication from the primary
+and are suitable for read-heavy reporting queries, analytics, or as cross-Region disaster
+recovery targets. Read Replicas can be promoted to standalone primary instances; promotion
+is irreversible and severs the replication link.
+
+5.5 Automated Backups and Point-in-Time Recovery (PITR)
+
+MCP-RDS takes automated daily snapshots during the configurable backup window (default
+03:00–05:00 UTC; must not overlap with the maintenance window). Automated snapshots
+are retained for 7 days (Standard RDS) or up to 35 days (Enterprise RDS with Extended
+Retention). Point-in-Time Recovery (PITR) allows restoring the database to any second
+within the retention window, not just to a snapshot boundary. PITR restoration launches
+a new RDS instance in the same Region; the original instance is not affected.
+
+For cross-Region backup durability, enable the RDS Cross-Region Snapshot Export option.
+Snapshots are replicated to a specified secondary Region with a typical lag under 15
+minutes. Cross-Region snapshots are stored in MCP-OBJ Archive class in the destination
+Region; restore fees apply (see Section 8.4). For the SLA commitments that apply to
+MCP-RDS, see Section 9.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6: NETWORKING AND CONTENT DELIVERY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6.1 Virtual Private Cloud (VPC)
+
+A Virtual Private Cloud (VPC) is an isolated virtual network provisioned for an account
+within a single Region. All compute, database, and other network-attached resources are
+launched inside a VPC. Each account receives a pre-created default VPC per Region with
+a default CIDR block of 10.0.0.0/16. Custom VPCs with any RFC 1918 private address
+range can be created: up to 10 VPCs per Region on Starter and Professional tiers, and
+up to 50 VPCs per Region on Enterprise and Enterprise Plus.
+
+A VPC is subdivided into subnets. Each subnet is associated with a single AZ and a
+contiguous sub-range of the VPC's CIDR block. Subnets that route traffic through an
+Internet Gateway (IGW) are public subnets; those without an IGW route are private
+subnets. Instances in private subnets reach the internet via a NAT Gateway, which is
+deployed in a public subnet and carries its own hourly and data-processing charges (see
+Section 8.5 for NAT Gateway pricing).
+
+6.2 Security Groups
+
+Security Groups are stateful, instance-level firewalls. Each Security Group contains
+inbound and outbound rules specifying a protocol (TCP, UDP, ICMP, or "all"), a port
+range, and a source or destination (CIDR block or another Security Group). Return
+traffic for established connections is automatically permitted regardless of outbound
+rules — this is the "stateful" property. Security Groups can be attached to multiple
+instances; up to 5 Security Groups may be attached to a single network interface.
+
+6.3 Network Access Control Lists (NACLs)
+
+NACLs are stateless, subnet-level firewalls. Unlike Security Groups, NACLs must
+explicitly permit return traffic in both directions. NACL rules are numbered and
+evaluated in ascending order; the first matching rule applies. MCP recommends Security
+Groups as the primary firewall mechanism for most use cases; NACLs add a coarser layer
+of subnet-level control for defense-in-depth scenarios.
+
+6.4 Load Balancers
+
+Application Load Balancer (ALB)
+Layer 7 HTTP/HTTPS load balancing. Supports path-based and host-based routing,
+WebSocket connections, HTTP/2, and integration with the MCP Web Application Firewall.
+Each ALB has a DNS name that resolves to one or more dynamically assigned IP addresses;
+use the DNS name in your DNS records (not IPs). ALBs automatically scale to handle
+increases in traffic; no manual capacity planning is required.
+
+Network Load Balancer (NLB)
+Layer 4 TCP/UDP/TLS load balancing for extreme throughput and ultra-low latency.
+Suitable for high-frequency trading, gaming backends, and VoIP. NLBs support static
+Elastic IP addresses, allowing clients to whitelist a fixed set of IPs. NLBs are
+zonal-aware: traffic is routed to targets in the same AZ by default, minimizing
+cross-AZ data transfer costs.
+
+6.5 Private Connectivity Options
+
+Direct Connect
+A dedicated private fiber connection from an on-premises facility to a Meridian Point
+of Presence (POP). Available in 1 Gbps, 10 Gbps, and 100 Gbps circuit options.
+Direct Connect bypasses the public internet, providing predictable latency and
+eliminating exposure to internet routing anomalies. Physical provisioning lead time
+is 45–90 days. Data transferred over Direct Connect is exempt from standard egress
+charges and instead billed at the Direct Connect data transfer rate (see Section 8.5).
+
+VPC Peering
+Point-to-point private network connectivity between two VPCs, either within the same
+Region or across Regions. Peered VPC traffic does not traverse the internet. Intra-Region
+peering incurs no additional bandwidth charges; inter-Region peering is billed at
+$0.01/GB in each direction.
+
+Transit Gateway
+A managed routing hub that connects multiple VPCs and on-premises Direct Connect
+connections through a single gateway. Simplifies hub-and-spoke network topologies for
+organizations with many VPCs. Transit Gateway attachment fee: $0.05/hour per VPC
+attachment. Data processing fee: $0.02/GB.
+
+6.6 Content Delivery Network (MCP-CDN)
+
+MCP-CDN is a globally distributed edge caching service with 85 Points of Presence
+(PoPs) across six continents. Edge PoPs cache static and dynamic content close to
+end users, reducing the load on origin servers and improving page-load performance.
+MCP-CDN integrates natively with MCP-OBJ buckets as origins.
+
+A CDN Distribution defines one or more cache behaviors: a URL path pattern, an origin,
+Cache-Control header handling, allowed HTTP methods, and geographic restrictions.
+Default TTL is 86,400 seconds (24 hours); minimum TTL is 0. Cache invalidation
+requests are accepted via the API and propagate to all 85 PoPs within 15 minutes.
+CDN egress is billed at a reduced flat rate worldwide (see Section 8.5), separate from
+the standard MCP-OBJ egress charges.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7: SECURITY AND COMPLIANCE CONTROLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7.1 Encryption at Rest
+
+All data stored within MCP — including MCP-OBJ objects, MCP-Block volumes, MCP-RDS
+database files, and snapshot data — is encrypted at rest using AES-256-GCM. Encryption
+is always-on, mandatory, and cannot be disabled. By default, MCP manages the encryption
+keys through its internal Key Management Service (MCP-KMS), using separate key material
+per account and per Region.
+
+Customer-Managed Keys (CMK)
+On Enterprise and Enterprise Plus tiers, customers may supply their own encryption keys
+through the Customer-Managed Key (CMK) feature. CMK keys may be stored in MCP-KMS
+(Meridian-hosted HSM) or imported from an external HSM via the PKCS #11 interface.
+On Enterprise Plus, FIPS 140-2 Level 3 HSM-backed CMKs are available for regulated
+workloads.
+
+Key Rotation
+Rotating a CMK does not re-encrypt data that was already written under the old key.
+New writes after the rotation date use the new key material; existing objects continue
+to use the key material that was active when they were written. If re-encrypting
+existing data under the new key is required, perform a server-side COPY operation to
+a new bucket specifying the new CMK. This re-encrypt-by-copy approach allows
+incremental migration without service interruption.
+
+7.2 Encryption in Transit
+
+All data in transit between MCP services and between customers and the MCP API is
+encrypted using TLS 1.2 or TLS 1.3. TLS 1.0 and TLS 1.1 are disabled on all MCP
+API endpoints. The MCP SDK enforces TLS 1.2 minimum by default; downgrading the
+minimum TLS version in SDK configuration is not supported.
+
+Certificate management: MCP uses certificates issued by its own Certificate Authority
+(Meridian Trust Services, a WebTrust-audited CA) for internal service-to-service
+communication. All customer-facing API endpoints use certificates issued by a
+globally recognized CA whose root is trusted by all major operating systems and
+browsers. Certificate transparency logging is enabled for all MCP customer-facing
+certificates.
+
+7.3 Network Security and DDoS Protection
+
+MCP includes baseline DDoS protection at the network edge (Layer 3/4 volumetric
+protection) at no additional charge for all tiers. The Meridian DDoS Mitigation Layer
+scrubs attack traffic before it reaches the customer's VPC, absorbing floods up to
+10 Tbps in aggregate capacity at the platform level.
+
+For application-layer (Layer 7) DDoS protection and web attack mitigation, the optional
+MCP Web Application Firewall (WAF) module is available as an add-on to ALB distributions.
+WAF provides OWASP Top 10 rule sets, rate limiting, IP reputation filtering, and custom
+rules. WAF is priced as an add-on service; see Section 8.5.
+
+7.4 Principle of Least Privilege
+
+IAM policies must grant only the minimum permissions necessary for the intended purpose.
+Recommended practices:
+
+  • Never attach administrator-level policies to Service Accounts. Instead, scope each
+    Service Account to specific actions on specific resources via Resource-Level Policies.
+  • Use IAM Conditions to restrict access by source IP address, source VPC, time of day,
+    or presence of MFA. For example, restrict write access to MCP-OBJ to requests
+    originating from a specific VPC endpoint.
+  • Audit IAM permissions quarterly using the IAM Access Advisor, which lists all
+    permissions granted to an account or user and when each permission was last used.
+    Remove unused permissions.
+  • Rotate API key pairs every 90 days. Refer to Section 2.2 for key rotation procedures.
+  • Enable MCP Activity Log for all API calls to detect anomalous access patterns.
+    Activity Log records include caller identity, action, resource ARN, source IP,
+    timestamp, and request/response size. Logs are stored in MCP-OBJ and can be
+    forwarded to a SIEM via the Activity Log Streaming API.
+
+7.5 Security Incident Response by Meridian
+
+In the event of a detected security incident affecting the MCP infrastructure (for
+example, unauthorized access to Meridian infrastructure or physical breach of a data
+center), Meridian Technologies commits to the following response obligations:
+
+  • Customer notification within 72 hours of internal incident discovery.
+  • Preliminary incident summary within 5 business days.
+  • Full incident report within 30 calendar days.
+  • Cooperation with customer forensic investigations within the scope of MCP's access
+    policies and applicable law.
+  • Coordination with affected regulatory bodies as legally required.
+
+Customer-side incidents (compromised API keys, misconfigured IAM policies, vulnerable
+application code) are outside Meridian's responsibility boundary. MCP provides tooling
+to mitigate customer-side incidents: API key revocation (immediate, via console or API),
+Activity Log replay for forensic analysis, and VPC Flow Logs for network forensics.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8: BILLING AND COST MANAGEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+8.1 Billing Cycle and Invoices
+
+MCP bills in arrears on a monthly calendar cycle. Invoices are generated on the first
+business day of each month for the preceding month's usage and are payable within 30
+days of the invoice date. Invoices are delivered electronically to the billing contact
+email on file and are also available for download in the MCP Web Console under
+Billing → Invoices → [select month].
+
+All amounts are billed in US Dollars (USD). Enterprise and Enterprise Plus customers
+may request Multi-Currency Billing: invoices converted to EUR, GBP, JPY, CAD, or AUD
+using the Bloomberg mid-market exchange rate as of the last business day of the billing
+month. Multi-Currency Billing is for convenience only; the contractual obligation
+remains denominated in USD.
+
+Late payment: Invoices not paid within 30 days accrue a late fee of 1.5% per month
+(18% annualized) on the outstanding balance. After 60 days of non-payment, MCP reserves
+the right to suspend service. Suspended accounts retain data for 90 days after suspension
+before it is deleted; this data-retention window during suspension is not subject to
+an SLA (see Section 9.3 for SLA exclusions related to billing status).
+
+8.2 Storage Overage Billing
+
+This section specifies the billing rates for storage consumption exceeding the tier-
+included quota. The quota limits and the notification schedule (including the 72-hour
+grace period) are defined in Section 3.2.
+
+When an account's MCP-OBJ Standard class storage usage in a Region exceeds the
+tier-included quota at any point during a billing month, additional storage is billed
+at the following per-GB-per-month rates:
+
+  Starter Tier        :  $0.023 per GB per month (all overage)
+  Professional Tier   :  $0.023 per GB per month (all overage)
+  Enterprise Tier     :  $0.019 per GB per month (first 10 TB of overage)
+                         $0.016 per GB per month (overage beyond 10 TB)
+  Enterprise Plus     :  Custom rate per Order Form; typically $0.014–$0.018 per GB per month
+
+These rates apply to Standard class overage only. Storage in Standard-IA, Archive, and
+Archive Deep is billed at the base rates for those classes regardless of whether the
+account has exceeded its Standard quota.
+
+Billing is prorated to the day. If an account's usage exceeds quota on day 10 of a
+30-day month and then drops below quota on day 22, only 12 days of overage charges apply,
+calculated as: [(peak daily overage GB)] × [overage rate] × (12 / 30). MCP calculates
+overage at the peak daily measurement taken at midnight UTC.
+
+Important interaction with the grace period: The 72-hour grace period described in
+Section 3.2 allows write operations to continue for up to 72 hours after the quota is
+first exceeded. Overage charges accrue from the instant the quota was first exceeded,
+not from the end of the grace period. If usage returns below the quota before the grace
+period expires, only the hours/days of actual overage are billed. If the grace period
+expires and usage remains above quota, writes are throttled in addition to ongoing
+overage billing; a tier upgrade or manual storage reduction is required to resume full
+write access.
+
+8.3 Compute and Database Pricing
+
+Compute (MCP-VM) On-Demand pricing varies by instance family, size, and Region. See
+the MCP Pricing Calculator at pricing.meridiancloud.com for current per-second rates.
+Reserved Instance discounts (30% for 1-year; 50% for 3-year) are applied automatically
+based on active RI commitments. Spot Instance pricing fluctuates in real time based on
+available capacity; the Spot Price History page in the console shows historical pricing.
+
+MCP-RDS is priced per vCPU-hour of database instance plus per-GB-month of attached
+storage, plus charges for automated snapshot storage beyond the included 100 GB per
+instance. Multi-AZ RDS instances incur approximately 2× the per-hour charge of single-AZ
+due to the standby replica. Read Replicas are priced identically to the instance type
+they mirror.
+
+8.4 Archive Restore Fees
+
+When objects stored in Archive or Archive Deep class are restored for access, the
+following fees apply per GB of data restored:
+
+  Archive Standard Restore (3–12 hours)      : $0.03 per GB
+  Archive Expedited Restore (1–5 hours)       : $0.09 per GB
+  Archive Deep Bulk Restore (12–48 hours)     : $0.0025 per GB
+
+The restored copy resides in Standard class for the duration of the restore window
+(configurable from 1 to 30 days; default 48 hours). Standard class storage charges
+accrue for the restored copy during the window.
+
+8.5 Data Transfer, NAT Gateway, and Add-On Service Pricing
+
+Outbound (Egress) Data Transfer
+Inbound data transfer to MCP is always free. Outbound (egress) data transfer is billed
+above the tier-included monthly allotment:
+
+  Starter (1 TB included)      : $0.09/GB for usage 1–10 TB; $0.07/GB above 10 TB
+  Professional (5 TB included) : $0.085/GB for usage 5–20 TB; $0.065/GB above 20 TB
+  Enterprise (20 TB included)  : $0.07/GB for usage 20–100 TB; $0.05/GB above 100 TB
+
+Direct Connect data transfer: $0.02/GB (all Regions; replaces standard egress billing
+for traffic routed through Direct Connect). MCP-CDN egress: $0.025/GB worldwide (flat
+rate regardless of destination; separate from MCP-OBJ egress charges).
+
+NAT Gateway Pricing
+NAT Gateway hourly charge: $0.045/hour per NAT Gateway. Data processing: $0.045/GB
+processed through the NAT Gateway (in addition to standard egress charges if applicable).
+
+Optional Add-On Services
+  Web Application Firewall (WAF)        : $25/month per ALB distribution + $0.0005 per
+                                          10,000 HTTP requests inspected.
+  Advanced DDoS Protection (L7)         : $500/month per 10 Gbps of mitigated capacity.
+                                          Enterprise and Enterprise Plus only.
+  Enterprise Support (Premium)          : $1,500/month (Enterprise) or included (Enterprise Plus).
+  Extended RDS Retention (35-day PITR)  : $0.02/GB per month of extended snapshot storage.
+  RDS Cross-Region Snapshot Export      : $0.02/GB per month for stored replicated snapshots;
+                                          standard restore fees apply if restored.
+
+8.6 Cost Allocation and Tagging
+
+Enterprise and Enterprise Plus accounts can apply up to 50 user-defined key:value tags
+to any MCP resource. Tags propagate to invoice line items, enabling cost allocation by
+team, project, environment, or cost center. Tags must be applied before the billing period
+in which they are to appear; retroactive tagging for closed billing periods is not
+supported. A cost explorer tool in the Web Console provides tag-based cost analysis.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9: SERVICE LEVEL AGREEMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9.1 SLA Coverage
+
+Meridian Technologies guarantees the following monthly uptime percentages for MCP
+services. SLA coverage applies only to paid tiers (Professional, Enterprise, Enterprise
+Plus). Starter tier operates without a formal SLA on a best-effort basis. The uptime
+percentage for a calendar month is calculated as:
+
+  Uptime% = ((total minutes in month) − (downtime minutes)) / (total minutes in month) × 100
+
+Downtime is defined as total unavailability of the affected service endpoint as measured
+from three independent monitoring nodes operated by Meridian (US East, EU Central, and
+Asia Pacific). Partial degradation (elevated latency or error rates above 1%) is not
+counted as downtime unless service is fully unavailable.
+
+  Service                             | SLA Uptime Target
+  ────────────────────────────────────────────────────────
+  MCP-OBJ Standard (Regional Storage) | 99.99%
+  MCP-OBJ Standard-IA                 | 99.90%
+  MCP-OBJ Archive / Archive Deep      | 99.50%
+  MCP-VM Compute Instances            | 99.95%
+  MCP-Block Block Volumes             | 99.99%
+  MCP-CDN Content Delivery Network    | 99.99%
+  MCP-RDS Managed Databases           | 99.95%
+  MCP Control Plane API               | 99.90%
+
+9.2 Credit Schedule and Claims Process
+
+When a service does not achieve its SLA uptime target in a calendar month, Meridian
+issues service credits calculated as a percentage of the affected service's monthly charge.
+
+Regional Storage SLA (MCP-OBJ Standard):
+  Uptime 99.0% to 99.99%  → 10% credit of monthly Standard storage charges
+  Uptime 95.0% to 99.0%   → 25% credit of monthly Standard storage charges
+  Uptime below 95.0%       → 50% credit of monthly Standard storage charges
+
+Note: an outage of 1 to 4 hours in a 30-day month results in uptime of approximately
+99.86% to 99.77%, which falls in the 99.0%–99.99% band and therefore qualifies for
+a 10% credit of that month's Standard storage charges. See Section 3.7 for the SLA
+tier applicable to each storage class.
+
+Compute SLA (MCP-VM):
+  Uptime 99.0% to 99.95%  → 10% credit of affected instance charges
+  Uptime 95.0% to 99.0%   → 30% credit of affected instance charges
+  Uptime below 95.0%       → 50% credit of affected instance charges
+
+MCP-RDS SLA:
+  Uptime 99.0% to 99.95%  → 10% credit of affected RDS instance charges
+  Uptime 95.0% to 99.0%   → 30% credit of affected RDS instance charges
+  Uptime below 95.0%       → 50% credit of affected RDS instance charges
+
+Control Plane API SLA:
+  Uptime 99.0% to 99.9%   → 10% credit of all platform charges that billing month
+  Uptime below 99.0%       → 25% credit of all platform charges that billing month
+
+All credits are capped at 50% of the affected service's monthly charge and cannot be
+exchanged for cash refunds. Credits are applied to the next invoice following approval.
+
+Credit Claim Procedure
+To claim a credit, an authorized account representative must submit a claim through the
+MCP Support Portal (support.meridiancloud.com → Billing → SLA Credit Request) within
+30 calendar days of the end of the billing month in which the incident occurred. The
+submission must include:
+  1. Account ID and billing email address.
+  2. Affected service and Region/AZ.
+  3. Approximate start and end timestamps of the outage (UTC).
+  4. Error codes or log excerpts demonstrating the service failure.
+  5. The name and email of the authorized account representative submitting the claim.
+
+Claims submitted more than 30 calendar days after the end of the affected billing month
+are not eligible for credit. Meridian will evaluate and respond to claims within 15
+business days of receipt. If a claim is approved, the credit is applied to the next
+monthly invoice; it does not reduce any outstanding balance.
+
+9.3 SLA Exclusions
+
+The SLA commitments in this section do not apply to:
+  • Scheduled maintenance windows announced at least 5 business days in advance.
+  • Service degradation caused by customer configuration errors (misconfigured VPC routes,
+    IAM policies, Security Groups, or application-level errors).
+  • Force majeure events beyond Meridian's reasonable control.
+  • Starter tier accounts, which have no SLA.
+  • Accounts suspended for non-payment (see Section 8.1 for suspension policy).
+  • Third-party service failures outside MCP's network boundary (customer ISP outages).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10: DISASTER RECOVERY AND BUSINESS CONTINUITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+10.1 Meridian's Infrastructure Resilience
+
+Each MCP Availability Zone is designed to N+1 power redundancy: dual UPS systems with
+separate grid feeds from two independent electrical substations, plus diesel generator
+backup rated for 72 hours of autonomous operation per full-load cycle. Generator fuel
+is stored on site and replenished on a weekly schedule. Physical cooling systems are
+redundant to N+2 for critical zones (AZ-USE1, AZ-EUC1, AZ-APC1) and N+1 for the
+remaining AZs.
+
+AZ boundaries are designed to isolate failures: a hardware fault, power fault, or
+cooling failure in one AZ does not cascade to a sibling AZ in the same Region. The
+MCP internal backbone maintains connectivity between AZs at all times; if a backbone
+link fails, traffic is automatically rerouted over redundant paths within 500 ms.
+
+10.2 Shared Responsibility Model
+
+MCP operates on a shared responsibility model for disaster recovery and security:
+
+Meridian Technologies is responsible for:
+  • Physical infrastructure availability, including power, cooling, and network fabric.
+  • Hypervisor and virtualization layer security and availability.
+  • Managed service availability (MCP-RDS automated backups, multi-AZ failover).
+  • Encryption at rest and in transit for all MCP-managed data.
+  • DDoS mitigation at the network edge.
+
+The Customer is responsible for:
+  • Data backup strategy beyond what MCP provides by default.
+  • Cross-AZ and cross-Region replication configuration for active workloads.
+  • Application-level fault tolerance (deploying across multiple AZs or Regions).
+  • IAM policy correctness and key security.
+  • Security of data within customer VPCs, including application-layer vulnerabilities.
+
+MCP provides tooling (CRR for object storage, multi-AZ RDS, volume snapshots, lifecycle
+rules) to help customers meet their responsibilities, but these tools must be actively
+configured by the customer. Meridian does not configure DR controls on behalf of
+customers unless an explicit managed DR service contract is in place.
+
+10.3 Backup and Recovery Options for MCP-OBJ
+
+MCP-OBJ Standard and Standard-IA storage classes provide eleven-nines durability through
+automatic three-way AZ replication within a Region. This protects against hardware
+failures and AZ outages but does not protect against accidental deletion, ransomware
+encryption, or application-level logical corruption.
+
+Recommended protections against deletion and corruption:
+
+Versioning (described in Section 3.4): Retains all historical versions. Accidentally
+deleted objects are recoverable by removing the Delete Marker. Accidentally overwritten
+objects are recoverable by reverting to a previous version. Versioning storage costs
+accumulate; use Lifecycle Rules (Section 3.6) to transition old versions to Archive
+class automatically.
+
+Cross-Region Replication (CRR): Automatically replicates newly written objects to a
+destination bucket in a secondary Region. CRR covers new writes only; existing objects
+at CRR enable time are not replicated. Replication lag is typically under 60 seconds
+for objects under 100 MB and under 15 minutes for objects up to 5 GB.
+
+Manual Snapshots via COPY: For point-in-time archives of critical data sets, use a
+scheduled job to COPY objects to a dedicated archive bucket with Object Locking enabled,
+providing immutable snapshots protected from deletion or modification.
+
+10.4 Disaster Recovery Architecture Tiers
+
+Organizations should select a DR tier based on the Recovery Time Objective (RTO) and
+Recovery Point Objective (RPO) their business requires:
+
+Tier 1 — Active-Active Multi-Region (RTO < 5 min, RPO < 1 min)
+Both Regions serve live traffic at all times. Data is replicated synchronously (for
+databases) or with minimal asynchronous lag (for object storage). A global load balancer
+(MCP-CDN or Global Traffic Manager) distributes traffic between Regions and detects
+failures within seconds, redirecting traffic to the healthy Region automatically. Highest
+cost; recommended for systems where any downtime causes immediate and significant
+business impact.
+
+Tier 2 — Active-Passive (Warm Standby) (RTO 15–30 min, RPO < 5 min)
+A reduced-capacity standby environment is maintained in a secondary Region, updated
+via CRR and RDS Cross-Region Snapshot Export. On a primary Region failure, the standby
+is scaled up and DNS is updated to point to it. Requires automated failover scripting
+and periodic DR drills to validate the RTO target.
+
+Tier 3 — Backup and Restore (RTO hours, RPO daily)
+The simplest and cheapest approach: daily automated RDS snapshots plus ad-hoc MCP-OBJ
+versioning. Recovery means provisioning a fresh environment from scratch in a secondary
+Region and restoring from the most recent backup. Appropriate for dev/test and non-time-
+critical workloads.
+
+10.5 DR Testing Requirements
+
+Meridian recommends that customers performing quarterly DR tests document the test results
+and store them in a location accessible during a real disaster (i.e., in a Region
+different from the one being tested). Meridian offers an optional DR Validation Service
+(Enterprise and Enterprise Plus) where Meridian engineers guide customers through a
+structured tabletop exercise and simulated failover. Contact your TAM to schedule.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11: API REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+11.1 Control Plane API Overview
+
+The MCP Control Plane API is a RESTful API that accepts and returns JSON over HTTPS.
+All API interactions are version-prefixed. The current API version is v4:
+
+  Base URL: https://api.meridiancloud.com/v4/
+
+Authentication is required on every request. Accepted credential formats:
+
+  JWT Bearer Token: Authorization: Bearer <jwt>
+  API Key Pair (HMAC-signed): Authorization: MCP-HMAC <access-key-id>/<timestamp>/<signature>
+
+Rate limits apply per account:
+  Enterprise tier : 100 requests/second (burst to 500 for up to 5 seconds)
+  Professional    : 20 requests/second
+  Starter         : 5 requests/second
+
+Storage API (S3-compatible endpoint: https://s3.meridiancloud.com):
+  5,500 GET/HEAD requests/second per prefix
+  3,500 PUT/POST/DELETE/COPY requests/second per prefix
+
+For higher throughput, distribute objects across multiple key prefixes.
+
+11.2 Core REST Endpoints
+
+Compute (MCP-VM):
+  GET    /v4/compute/instances              — list all instances (paginated)
+  POST   /v4/compute/instances              — launch a new instance
+  GET    /v4/compute/instances/{id}         — describe a specific instance
+  PATCH  /v4/compute/instances/{id}         — modify instance attributes (e.g., security groups)
+  POST   /v4/compute/instances/{id}/stop    — stop a running instance
+  POST   /v4/compute/instances/{id}/start   — start a stopped instance
+  DELETE /v4/compute/instances/{id}         — terminate an instance
+
+Storage Buckets:
+  GET    /v4/storage/buckets                — list buckets in the account
+  PUT    /v4/storage/buckets/{name}         — create a bucket
+  GET    /v4/storage/buckets/{name}         — describe bucket (metadata only)
+  DELETE /v4/storage/buckets/{name}         — delete a bucket (must be empty first)
+
+Storage Objects (also accessible via the S3-compatible endpoint):
+  GET    /v4/storage/buckets/{name}/objects               — list objects (paginated)
+  PUT    /v4/storage/buckets/{name}/objects/{key}         — upload object (≤5 GB)
+  GET    /v4/storage/buckets/{name}/objects/{key}         — download object
+  HEAD   /v4/storage/buckets/{name}/objects/{key}         — retrieve object metadata
+  DELETE /v4/storage/buckets/{name}/objects/{key}         — delete object or create delete marker
+  POST   /v4/storage/buckets/{name}/objects/{key}/restore — initiate Archive restore
+
+IAM:
+  GET    /v4/iam/users                      — list sub-accounts and service accounts
+  POST   /v4/iam/users                      — create a new user
+  DELETE /v4/iam/users/{id}                 — delete a user
+  GET    /v4/iam/policies                   — list IAM policies
+  POST   /v4/iam/policies                   — create an IAM policy
+  POST   /v4/iam/users/{id}/attach-policy   — attach a policy to a user
+
+11.3 Multipart Upload API
+
+Objects larger than 5 GB must use the Multipart Upload API. The procedure:
+
+  1. Initiate Upload
+     POST /v4/storage/buckets/{name}/multipart
+     Body: {"key": "large-file.dat", "storageClass": "standard"}
+     Response: {"uploadId": "mpu-abc123xyz"}
+
+  2. Upload Parts (repeat for each part)
+     PUT /v4/storage/buckets/{name}/multipart/{uploadId}/parts/{partNumber}
+     Part numbers 1–10,000. Each part must be 5 MB – 5 GB except the last.
+     Response: {"etag": "abc123...", "partNumber": N}
+
+  3. Complete Upload
+     POST /v4/storage/buckets/{name}/multipart/{uploadId}/complete
+     Body: {"parts": [{"partNumber": 1, "etag": "..."}, ...]}
+     Response: 200 OK with final object metadata.
+
+  4. Abort Upload (cancel and clean up partial parts)
+     DELETE /v4/storage/buckets/{name}/multipart/{uploadId}
+
+Incomplete multipart uploads accumulate storage charges for uploaded parts. Use a
+Lifecycle Rule (see Section 3.6) to automatically abort multipart uploads older than
+N days (recommended: 7 days) to avoid unintended cost.
+
+11.4 Pagination
+
+List endpoints return paginated results. The response includes a nextToken field when
+more results exist. Pass nextToken as a query parameter in the subsequent request:
+
+  GET /v4/compute/instances?nextToken=eyJpZCI6ImlkLTEyMyJ9&maxResults=100
+
+maxResults defaults to 100 and the maximum allowed value is 1,000. The complete result
+set must be retrieved by following the nextToken chain; partial iteration may miss
+recently created resources.
+
+11.5 Error Responses
+
+All error responses use the standard envelope:
+  {"error": {"code": "StorageQuotaExceeded", "message": "...", "requestId": "req-abc123"}}
+
+Common error codes:
+  400 InvalidRequest       : Request body malformed or missing required fields.
+  401 Unauthorized         : Authentication credential absent or invalid.
+  403 Forbidden            : Valid credential, but insufficient permissions.
+  404 NotFound             : Resource does not exist or is not accessible to the caller.
+  429 RateLimitExceeded    : Request rate exceeds the account's quota.
+  507 InsufficientStorage  : Account's storage quota exceeded and grace period expired.
+  500 InternalError        : Transient internal error; safe to retry with exponential backoff.
+  503 ServiceUnavailable   : Service temporarily unavailable; retry with backoff.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12: SUPPORT AND INCIDENT MANAGEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+12.1 Support Tiers
+
+Basic Support (all tiers, included)
+  • Access to self-service documentation at docs.meridiancloud.com.
+  • Community forums at community.meridiancloud.com.
+  • Ticket submission via the MCP Support Portal for Severity 3 and Severity 4 issues.
+  • Response target: 2 business days for Severity 3; 5 business days for Severity 4.
+
+Standard Support (Professional tier and above, included)
+  • 24/7 ticket submission for all severity levels.
+  • Response SLAs: Severity 1 (production outage) within 1 hour; Severity 2 (impaired)
+    within 4 hours; Severity 3 within 1 business day; Severity 4 within 2 business days.
+  • Access to technical support engineers for architecture reviews (2 per year included).
+
+Premium Support (Enterprise Plus, included; Enterprise, add-on at $1,500/month)
+  • 24/7 phone and live-chat access to senior Tier 3 engineers.
+  • Named Technical Account Manager for proactive guidance and planning.
+  • Quarterly infrastructure health reviews.
+  • Response SLAs: Severity 1 within 15 minutes; Severity 2 within 1 hour.
+
+12.2 Severity Classification
+
+Severity 1 (Critical): Complete service outage blocking all production use. Examples:
+all VMs unreachable, all storage operations failing, Control Plane API returning 5xx
+for all requests. An active Sev1 requires the customer to designate an on-call
+engineer to participate in a bridge call with MCP support within 30 minutes of the
+ticket being assigned to a Meridian engineer.
+
+Severity 2 (High): Significant degradation with partial functionality remaining. Examples:
+elevated API error rates above 5%, one AZ in a multi-AZ deployment offline, storage
+throughput degraded by more than 50%.
+
+Severity 3 (Medium): Non-urgent issues with a workaround available. Examples: lifecycle
+rule execution delayed by more than 24 hours, CDN cache invalidation delayed beyond
+the 15-minute SLA, billing export function returning errors.
+
+Severity 4 (Low): Questions, documentation requests, and feature suggestions. No
+production impact.
+
+12.3 Scheduled Maintenance
+
+MCP performs routine maintenance including firmware updates, security patching, and
+infrastructure upgrades on a regular schedule:
+
+  AZ-USE1, AZ-USE2   : Sunday 02:00–06:00 UTC
+  AZ-USW1, AZ-USW2   : Sunday 08:00–12:00 UTC
+  AZ-EUC1, AZ-EUC2   : Saturday 22:00–02:00 UTC (next day)
+  AZ-EUW1            : Saturday 23:00–03:00 UTC (next day)
+  AZ-APC1, AZ-APC2   : Saturday 14:00–18:00 UTC
+
+Maintenance that may interrupt service is announced at least 5 business days in advance
+via email to maintenance notification contacts and on the MCP Status page
+(status.meridiancloud.com). Emergency security-critical maintenance may be performed
+with shorter notice; MCP will provide maximum feasible advance notice.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 13: COMPLIANCE AND DATA GOVERNANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+13.1 Certifications and Attestations
+
+Meridian Technologies maintains the following certifications, renewed annually or on
+the frequency required by each standard:
+
+  ISO/IEC 27001:2022  (Information Security Management System) — all Regions
+  ISO/IEC 27017:2015  (Cloud Security Controls) — all Regions
+  ISO/IEC 27018:2019  (PII in Public Cloud) — all Regions
+  SOC 2 Type II       (Security, Availability, Confidentiality) — all Regions
+  SOC 3               (Public summary of SOC 2 findings) — all Regions
+  PCI DSS Level 1     (Payment Card Industry) — US East and EU Central Regions
+  HIPAA BAA           (Business Associate Agreement available for qualifying customers)
+  FedRAMP Moderate    (US East Region, AZ-USE1 and AZ-USE2 only)
+
+Audit reports, penetration test summaries, and the Cloud Security Alliance Cloud Controls
+Matrix (CAIQ) self-assessment are available to customers under NDA from the MCP Compliance
+Portal at compliance.meridiancloud.com.
+
+13.2 GDPR and European Data Protection
+
+Meridian Technologies acts as a Data Processor under the General Data Protection Regulation
+(GDPR) when processing personal data on behalf of customers established in the EEA. For
+account-level data (contact details, billing information), Meridian acts as Data Controller.
+
+For GDPR-compliant use of MCP:
+  • Select EU Central or EU West as the deployment Region to ensure personal data remains
+    within the EEA throughout its lifecycle.
+  • Execute a Data Processing Agreement (DPA) with Meridian via the Web Console
+    (Account → Legal → Data Processing Agreement). The DPA incorporates Standard
+    Contractual Clauses (SCCs) for data transfers outside the EEA.
+  • Use MCP Activity Log and Object Metadata to fulfill data subject access requests
+    (DSAR) and erasure requests within regulatory deadlines.
+  • Configure Lifecycle Rules (Section 3.6) and Object Locking (Section 3.4) to enforce
+    data retention limits and prevent premature deletion of required records.
+
+13.3 Impact of MFA Disablement on Compliance Attestation
+
+As noted in Section 2.4, disabling MFA enforcement on tiers where it is required may
+affect compliance attestation status. Specifically:
+
+  SOC 2 Trust Services Criteria CC6.1 requires that access to the system is restricted
+  through the use of strong authentication. Meridian's SOC 2 auditors require MFA
+  enforcement for all console logins. If a customer's account-level MFA enforcement
+  is disabled and an auditor reviews the shared responsibility evidence, the absence
+  of MFA enforcement may result in a qualified opinion on controls relying on MCP's
+  authentication posture.
+
+  ISO 27001 Control A.9.4.2 (Secure log-on procedures) requires multi-factor
+  authentication for privileged access. Disabling MFA for Root Account or IAM Admin
+  logins will require a documented compensating control or exception justification.
+
+Customers in regulated industries (finance, healthcare, government) are strongly advised
+to maintain MFA enforcement and to engage their compliance team before changing any
+authentication policy. The Meridian Compliance team (compliance@meridiancloud.com) is
+available to discuss control mapping for specific regulatory frameworks.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 14: TROUBLESHOOTING GUIDE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+14.1 Storage: 403 Forbidden on Object Access
+
+Cause: The calling identity lacks the required IAM permission for the action being
+attempted (e.g., storage:GetObject, storage:PutObject), or the resource policy on
+the bucket denies access.
+
+Resolution steps:
+  1. Check the IAM policy attached to the calling user or service account. Verify that
+     the relevant action (storage:GetObject or storage:PutObject) is explicitly allowed
+     on the target resource ARN.
+  2. Check the bucket resource policy (if any). A Deny in a resource policy overrides an
+     Allow in an IAM policy.
+  3. If using a VPC Endpoint for storage, verify that the endpoint policy permits the
+     action. VPC Endpoint policies are separate from both IAM and bucket policies.
+  4. Check MCP Activity Log for the specific request. The log entry includes the evaluation
+     reason for the 403 (e.g., "implicit deny", "explicit deny from bucket policy").
+  5. If CMK is configured on the bucket, verify that the calling identity has the
+     kms:Decrypt permission on the CMK.
+
+14.2 Storage: 507 Insufficient Storage on PUT
+
+Cause: The account's MCP-OBJ storage quota has been exceeded and the 72-hour grace
+period has expired. As described in Section 3.2, write operations are throttled after
+the grace period ends. Read operations (GET, HEAD, LIST) remain fully functional.
+
+Resolution options:
+  A. Delete or archive sufficient objects to bring total usage below the included quota.
+     Transitioning objects to Archive or Archive Deep via Lifecycle Rules (Section 3.6)
+     reduces Standard class usage immediately, freeing write capacity.
+  B. Upgrade the service tier to obtain a higher included storage quota. Contact the
+     MCP sales team or upgrade via the Web Console (Account → Plan → Upgrade).
+  C. For Enterprise Plus customers: contact your TAM to negotiate a temporary quota
+     increase while a permanent solution is implemented.
+
+14.3 Compute: Instance Fails to Launch
+
+Cause: Insufficient capacity, missing IAM permissions, misconfigured VPC, or invalid
+launch configuration.
+
+Resolution steps:
+  1. Check the Launch error code in the Web Console or the API response. Common codes:
+       InsufficientCapacity — the requested instance type is unavailable in this AZ.
+       InvalidAMI           — the specified image does not exist or is not accessible.
+       SubnetFull           — the subnet has no remaining IP addresses in its CIDR range.
+       Forbidden            — the calling identity lacks compute:LaunchInstance permission.
+  2. For InsufficientCapacity: retry in a different AZ within the same Region (instance
+     type capacity is independent per AZ) or try a different instance size.
+  3. For SubnetFull: add a new subnet with a larger CIDR block in the same AZ, or release
+     unused Elastic IPs and stop instances that are no longer needed.
+
+14.4 Authentication: JWT Token Rejected with 401
+
+Cause: Token has expired, was issued for a different audience, or was signed with a
+revoked key.
+
+Resolution steps:
+  1. Verify the token expiry. JWT tokens have a default TTL of 30 minutes. If using
+     the MCP SDK, ensure the auto-refresh mechanism is enabled.
+  2. Verify the token audience (aud claim) matches the API endpoint being called.
+  3. If the token was issued before an API key rotation, the signing key may no longer
+     be valid. Generate a new token using the updated key pair.
+  4. If using SSO, check that your IdP's session has not expired and re-authenticate
+     through the SSO flow.
+
+14.5 Billing: Unexpected Overage Charges
+
+Cause: Storage usage exceeded the tier-included quota. Refer to Section 3.2 for the
+notification schedule and Section 8.2 for the overage billing rates.
+
+Resolution steps:
+  1. Review the Storage Usage report in the Web Console (Billing → Usage → Storage)
+     to identify when usage exceeded the quota and by how much.
+  2. Enable Lifecycle Rules on high-growth buckets to automatically transition or expire
+     old objects and keep Standard class usage within bounds.
+  3. Enable storage usage alerts (80%, 95%, 100% of quota) to ensure timely notification.
+     If alerts were not received, verify the billing contact email and notification
+     channel configuration.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 15: GLOSSARY OF TERMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Archive Deep: The coldest MCP-OBJ storage class. 180-day minimum retention. Bulk
+Restore only (12–48 hours). 99.0% monthly availability. See Section 3.3.
+
+Archive: A cold MCP-OBJ storage class. 90-day minimum retention. Standard or Expedited
+Restore. 99.5% monthly availability. See Section 3.3.
+
+Auto-Scaling Group (ASG): A managed group of MCP-VM instances that automatically
+scales in response to demand, scheduled events, or metric thresholds. See Section 4.4.
+
+Availability Zone (AZ): A physically separate data center within an MCP Region,
+connected to sibling AZs by high-bandwidth, low-latency private networking.
+
+Bucket: A logical container for objects in MCP-OBJ, with a globally unique Region-scoped
+name. See Section 3.1.
+
+CIDR (Classless Inter-Domain Routing): Notation for IP address ranges (e.g., 10.0.0.0/16).
+
+Content Delivery Network (CDN): The MCP-CDN edge caching service with 85+ global PoPs.
+See Section 6.6.
+
+Credit (SLA): A monetary reduction applied to a future MCP invoice when Meridian fails
+to meet an SLA commitment. Credits cannot be exchanged for cash. See Section 9.2.
+
+Cross-Region Replication (CRR): Asynchronous replication of MCP-OBJ objects to a
+bucket in a different Region. See Section 10.3.
+
+Customer-Managed Key (CMK): An encryption key supplied by the customer and managed
+through MCP-KMS or an external HSM. See Section 7.1.
+
+Delete Marker: A placeholder object version created when an object in a versioning-enabled
+bucket is deleted without specifying a VersionId. Makes the key invisible to standard
+GETs. See Section 3.4.
+
+Direct Connect: A dedicated private fiber connection between an on-premises facility
+and an MCP Point of Presence. See Section 6.5.
+
+Elastic IP: A static public IP address owned by an account that can be attached to or
+detached from instances. See Section 4.5.
+
+FedRAMP: Federal Risk and Authorization Management Program. MCP holds FedRAMP Moderate
+for US East Region (AZ-USE1, AZ-USE2). See Section 13.1.
+
+IAM (Identity and Access Management): MCP's system for managing user identities and
+access permissions using the MCP Policy Language. See Section 2.3.
+
+Instance: A virtual machine launched on MCP-VM, defined by an instance family and size.
+See Section 4.1.
+
+JWT (JSON Web Token): A short-lived cryptographically signed token used for API
+authentication, with a TTL of 15–60 minutes. See Section 2.5.
+
+Lifecycle Rule: A bucket-level policy that automatically transitions or expires objects
+based on age and filters. See Section 3.6.
+
+MCP-Block: Meridian's persistent block storage service for attachment to MCP-VM instances.
+See Section 4.3.
+
+MCP-CDN: Meridian's global content delivery network. See Section 6.6.
+
+MCP-KMS: Meridian's internal Key Management Service for managing encryption keys at rest.
+
+MCP-OBJ: Meridian's S3-compatible object storage service. See Section 3.
+
+MCP-RDS: Meridian's managed relational database service. See Section 5.
+
+MCP-VM: Meridian's virtual machine compute service. See Section 4.
+
+MFA (Multi-Factor Authentication): A login requirement for a second proof of identity
+(hardware key, TOTP, or SSO) beyond a password. See Section 2.4.
+
+Multi-AZ: A deployment mode where a primary resource has a synchronous standby in a
+second Availability Zone, enabling automatic failover. See Section 5.3.
+
+NAT Gateway: A managed network address translation service allowing instances in private
+subnets to initiate outbound internet connections. See Section 6.1.
+
+Object Locking (WORM): A bucket-level feature preventing deletion or overwrite of object
+versions before a specified retention date. Two modes: Governance and Compliance.
+See Section 3.4.
+
+PIOPS (Provisioned IOPS): A storage type for MCP-Block volumes with a guaranteed IOPS
+allocation. See Section 4.3.
+
+Point of Presence (PoP): An MCP-CDN edge node where content is cached for local delivery.
+
+Point-in-Time Recovery (PITR): The ability to restore an MCP-RDS database to any second
+within the backup retention window. See Section 5.5.
+
+Region: A geographic area containing two or more Availability Zones. Customer data stays
+in the selected Region unless cross-Region features are explicitly enabled.
+
+Reserved Instance (RI): A 1-year or 3-year commitment to use a specific instance type,
+yielding a 30% or 50% discount off On-Demand pricing. See Section 4.2.
+
+Root Account: The master billing account for an MCP subscription. Has unrestricted access.
+See Section 2.1.
+
+Service Account: A non-human IAM principal for programmatic access. Uses API key pairs
+or short-lived JWTs. Cannot log into the console. See Section 2.1.
+
+SLA (Service Level Agreement): Meridian's contractual uptime commitment for each MCP
+service, with defined credit remedies for unmet commitments. See Section 9.
+
+Spot Instance: An MCP-VM instance available at deep discount, subject to preemption.
+See Section 4.2.
+
+Standard Storage Class: The default MCP-OBJ storage class. 99.99% monthly availability.
+No retrieval fee. See Section 3.3.
+
+Standard-IA (Infrequent Access): A reduced-price MCP-OBJ storage class for data accessed
+less than once per month. 30-day minimum duration. Retrieval fee applies. See Section 3.3.
+
+Sub-Account (IAM User): A scoped user identity created under a Root Account, with
+permissions defined by attached IAM policies. See Section 2.1.
+
+Technical Account Manager (TAM): A dedicated Meridian engineer assigned to Enterprise
+and Enterprise Plus customers for proactive guidance. See Section 12.1.
+
+Transit Gateway: A managed routing hub connecting multiple VPCs and on-premises networks.
+See Section 6.5.
+
+VPC (Virtual Private Cloud): An isolated virtual network within a single MCP Region.
+See Section 6.1.
+
+VPC Peering: Point-to-point private connectivity between two VPCs. See Section 6.5.
+
+VersionId: A unique identifier assigned to each version of an object in a versioning-
+enabled bucket. Required to access or delete specific historical versions. See Section 3.4.
+
+WORM (Write Once Read Many): See Object Locking.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF DOCUMENT
+Meridian Cloud Platform Technical Reference Manual — Version 4.2
+Copyright © 2026 Meridian Technologies Inc. All rights reserved.
+docs.meridiancloud.com | support.meridiancloud.com | compliance.meridiancloud.com
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

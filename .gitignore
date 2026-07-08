@@ -6,5 +6,6 @@ venv/
 .DS_Store
 
 script.md
+script_6.md
 .code-generator/
 graphify-out/

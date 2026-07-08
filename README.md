@@ -13,7 +13,7 @@ The **second student** crammed. Before the exam they read the entire textbook in
 A large language model can play either student.
 
 - The first student is **RAG** — *Retrieval-Augmented Generation*. Your corpus lives in an external store. At query time you embed the question, retrieve the top-k chunks, and paste only those into the prompt. The model sees a keyhole view, chosen by the retriever.
-- The second student is **CAG** — *Cache-Augmented Generation*. You load the *entire* document into the context window once, mark it with `cache_control`, and let prompt caching hold the KV cache. Every question runs against the full text. No retriever, no keyhole — but bounded by the context window.
+- The second student is **CAG** — *Cache-Augmented Generation*. You load the *entire* document into the context window as a stable prefix; OpenAI's automatic prompt caching holds it, so every later question reuses it cheaply. Every question runs against the full text. No retriever, no keyhole — but bounded by the context window.
 
 **flashcard** runs both students against the same questions and shows you, live, where they agree, where they diverge, and what each one costs.
 
@@ -34,7 +34,7 @@ A large language model can play either student.
 ```
 
 - **Left panel (RAG):** the question is embedded, the top-k most similar chunks are pulled from the vector index, and only those chunks enter the prompt. Small context, low per-question cost — but the answer is only as good as what the retriever fetched.
-- **Right panel (CAG):** the full document sits in context behind a `cache_control` ephemeral marker. The first question pays to write the cache; every question after reads it cheaply. Large context, perfect recall inside the window.
+- **Right panel (CAG):** the full document sits in context as a stable prefix. The first question pays the full prompt; OpenAI caches the prefix automatically, so every question after reads it cheaply. Large context, perfect recall inside the window.
 
 **Teaching beat:** on a question whose answer is spread across distant parts of the document, RAG's keyhole misses a piece and CAG answers in full — the two panels visibly disagree. On a narrow lookup over a giant corpus, RAG stays cheap while CAG pays to hold the whole book. Neither wins everywhere; flashcard shows you *where* the line is.
 
@@ -47,7 +47,7 @@ A large language model can play either student.
 | Recall | Only what the retriever fetched | Everything in the window |
 | Failure mode | Retriever misses the right chunk | Document exceeds the context window |
 | Corpus size | Effectively unbounded | Bounded by the context window |
-| First-call cost | Low | High (cache write) |
+| First-call cost | Low | High (full prompt, uncached) |
 | Repeat-call cost | Low | Very low (cache read) |
 | Infra | Embedder + vector index | Prompt caching only |
 
@@ -64,8 +64,7 @@ Copy `.env.example` to `.env` and set your keys:
 ```bash
 cp .env.example .env
 # Edit .env and set:
-# ANTHROPIC_API_KEY=sk-ant-...
-# VOYAGE_API_KEY=pa-...        # embeddings for the RAG panel
+# OPENAI_API_KEY=sk-...        # generation + RAG embeddings + optional judge
 ```
 
 Keys are read exclusively from the environment / `.env` file. They are never committed to source.
@@ -78,12 +77,11 @@ flashcard [OPTIONS]
 
 | Flag | Default | Description |
 |---|---|---|
-| `--model` | `sonnet-4.6` | Generation model |
+| `--model` | `gpt-5.2` | Generation model (OpenAI) |
 | `--doc` | *(built-in sample corpus)* | Path to the knowledge source |
 | `--questions-file` | *(built-in questions)* | Path to a custom questions JSON file |
 | `--top-k` | `3` | RAG: chunks retrieved per question |
 | `--chunk-size` | `800` | RAG: chunk length in tokens |
-| `--ttl` | `5m` | CAG cache TTL: `5m` or `1h` |
 | `--max-tokens` | `400` | Max output tokens per answer |
 | `--delay` | `0.0` | Pacing delay between questions (seconds, useful for recording) |
 
@@ -92,17 +90,17 @@ Before firing any real API calls, flashcard prints a **worst-case cost estimate*
 ## Sample run
 
 ```bash
-# Default: built-in corpus + questions, top-3 retrieval, 5-minute CAG cache
+# Default: built-in corpus + questions, top-3 retrieval
 flashcard
 
-# Bigger keyhole for RAG, 1-hour cache for CAG
-flashcard --top-k 6 --ttl 1h --max-tokens 400
+# Bigger keyhole for RAG
+flashcard --top-k 6 --max-tokens 400
 
 # Your own document and questions
 flashcard --doc ./handbook.txt --questions-file ./questions.json
 ```
 
-The terminal shows both pipelines updating in real time. The footer tracks cumulative cost per side, retrieval hit/miss count for RAG, and cache read/write totals for CAG.
+The terminal shows both pipelines updating in real time. The footer tracks cumulative cost per side, retrieval hit/miss count for RAG, and cache-read totals for CAG.
 
 ## When to use which
 

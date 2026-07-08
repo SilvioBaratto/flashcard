@@ -5,16 +5,16 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "flashcard"
 version = "0.1.0"
-description = "RAG vs CAG side-by-side demo CLI for Anthropic"
+description = "RAG vs CAG side-by-side demo CLI for OpenAI"
 requires-python = ">=3.11"
 dependencies = [
     "baml-py>=0.87",
     "typer>=0.12",
     "rich>=13",
-    "anthropic>=0.40",
-    "voyageai>=0.3",
+    "openai>=1.0",
     "numpy>=1.26",
     "python-dotenv>=1.0",
+    "tiktoken>=0.7",
 ]
 
 [project.optional-dependencies]
@@ -23,24 +23,33 @@ dev = [
     "pytest>=8",
     "pytest-asyncio>=0.24",
     "hypothesis>=6",
-    "tiktoken>=0.7",
 ]
 
 [project.scripts]
 flashcard = "flashcard.cli:app"
 
 [tool.setuptools.packages.find]
-include = ["flashcard*"]
+include = ["baml_client*", "flashcard*"]
+
+[tool.setuptools.package-data]
+flashcard = ["data/*.txt", "data/*.json"]
+
+[tool.ruff]
+exclude = ["baml_client/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W"]
 
 [tool.ruff.lint.per-file-ignores]
+# Descriptive BDD test names (test_when_..._then_...) and assert messages
+# routinely exceed the line limit; readability beats wrapping in test code.
 "tests/*" = ["E501"]
 
 [tool.pyright]
-venvPath = "."
+exclude = ["baml_client/", ".venv", "tests/"]
+pythonVersion = "3.12"
 typeCheckingMode = "standard"
+reportMissingImports = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -49,5 +58,5 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
 markers = [
-    "integration: live tests that hit the real Anthropic API (require ANTHROPIC_API_KEY)",
+    "integration: live tests that hit the real OpenAI API (require OPENAI_API_KEY)",
 ]
