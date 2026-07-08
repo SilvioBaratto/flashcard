@@ -33,6 +33,7 @@ async def answer_cag(
     on_token: Callable[[str], Any] | None = None,
     b: Any = _SENTINEL,
     collector_factory: Callable[[], Any] = baml_py.Collector,
+    client_registry: Any = None,
 ) -> tuple[str, TurnMetrics]:
     """Stream AnswerCAG and return the final text plus a TurnMetrics snapshot.
 
@@ -42,16 +43,22 @@ async def answer_cag(
         on_token: Optional; called with each raw partial str during streaming.
         b: Injectable BAML async client.  Defaults to baml_client.async_client.b.
         collector_factory: Factory producing a Collector (injectable for tests).
+        client_registry: Optional BAML ClientRegistry — carries the runtime model
+            and ``max_completion_tokens`` output cap. When ``None`` the static
+            ``client Gpt52`` in answer.baml is used (no output cap).
 
     Returns:
         ``(final_text, metrics)`` — pricing is the caller's responsibility.
     """
     client = _resolve_client(b)
     collector = collector_factory()
+    baml_options: dict[str, Any] = {"collector": collector}
+    if client_registry is not None:
+        baml_options["client_registry"] = client_registry
     raw = client.stream.AnswerCAG(
         document=document,
         question=question,
-        baml_options={"collector": collector},
+        baml_options=baml_options,
     )
     stream = await raw if inspect.iscoroutine(raw) else raw
     async for partial in stream:
