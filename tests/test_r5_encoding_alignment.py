@@ -13,6 +13,7 @@ All tests are authored from the acceptance criteria only.  No implementation
 source was read.  These tests currently fail because cost_guard uses
 cl100k_base; they will pass once the implementation switches to o200k_base.
 """
+
 from __future__ import annotations
 
 import inspect
