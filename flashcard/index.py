@@ -62,7 +62,19 @@ class VectorIndex:
 
     def _top_k_indices(self, scores: np.ndarray, k: int) -> np.ndarray:
         top_k = min(k, len(scores))
-        return np.argsort(-scores, kind="stable")[:top_k]
+        indices = np.arange(len(scores))
+        # Adjust scores within floating-point epsilon of each other to be equal.
+        # Handles accumulation errors in dot-product from normalization variance.
+        # rtol=1e-14 catches differences like 0.9999999999999998 vs 1.0 (~1 ULP).
+        adjusted_scores = np.array(scores, dtype=np.float64)
+        for i in range(len(scores)):
+            for j in range(i + 1, len(scores)):
+                if np.isclose(adjusted_scores[i], adjusted_scores[j],
+                              rtol=1e-14, atol=0):
+                    adjusted_scores[j] = adjusted_scores[i]
+        # Sort by descending score; index is tie-breaker for insertion order.
+        sorted_indices = indices[np.lexsort((indices, -adjusted_scores))]
+        return sorted_indices[:top_k]
 
 
 def _normalise_rows(matrix: np.ndarray) -> np.ndarray:

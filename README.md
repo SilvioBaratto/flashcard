@@ -84,8 +84,21 @@ flashcard [OPTIONS]
 | `--chunk-size` | `800` | RAG: chunk length in tokens |
 | `--max-tokens` | `400` | Max output tokens per answer |
 | `--delay` | `0.0` | Pacing delay between questions (seconds, useful for recording) |
+| `--judge/--no-judge` | off | Run the optional CompareAnswers divergence judge (`gpt-5-mini`) to flag agree/diverge and which answer is more complete |
 
-Before firing any real API calls, flashcard prints a **worst-case cost estimate** and asks for confirmation.
+Before firing any real API calls, flashcard prints a **worst-case cost estimate** and asks for confirmation. The estimate shows the RAG total, the CAG Q1 cost (most expensive — the full document at base rate, nothing cached yet), the CAG all-questions total, and the combined worst case.
+
+### Resilience
+
+Network hiccups mid-run (HTTP 429 or 5xx from OpenAI) are retried automatically with exponential backoff rather than aborting the session. A transient "retrying…" note appears in the TUI while a recovery is in progress; it clears itself as soon as the next successful response arrives. The take stays alive.
+
+### Game mode
+
+```bash
+flashcard game
+```
+
+Starts a local, no-API scenario quiz based on the three `script_6.md` use cases. For each scenario (IT help-desk manual → **CAG**, constantly-updated legal cases → **RAG**, clinical decision support → **Both**), you pick RAG / CAG / Both and the quiz reveals the reasoning across corpus size, freshness, latency, and citation need. No API calls — pure local logic.
 
 ## Sample run
 

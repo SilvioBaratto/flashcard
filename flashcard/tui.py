@@ -1,22 +1,24 @@
-"""Rich Live two-panel TUI driver for RAG-vs-CAG side-by-side display (issue #17).
+"""Rich Live two-panel TUI driver for RAG-vs-CAG side-by-side display.
 
 Wires TuiState (#15) and renderables (#16) to the runner's async stream.
 Two update paths — on_token (streaming partials) and finalize (per-TurnResult) —
 both owned by TuiDriver and funnelled through a single refresh() call.
 
-Scope: layout construction and display only. No CLI flags, cost-guard,
-judge, or resilience wiring (those belong to Cycle 5).
+Issue #21: run_tui drives resilient_session (not run_session directly), passing
+on_token + on_note. A thin note region shows the transient 'retrying…' message
+on 429/5xx and clears on recovery.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from rich.layout import Layout
 from rich.live import Live
 
+from flashcard.resilience import resilient_session as _resilient_session_impl
 from flashcard.runner import run_session
 from flashcard.tui_render import cag_header, footer_strip, panel_body, rag_header
-from flashcard.tui_state import TuiState
+from flashcard.tui_state import TuiState, verdict_to_markers  # noqa: F401 (re-exported)
 
 _REFRESH_PER_SECOND = 10
 _HEADER_SIZE = 7
@@ -24,7 +26,36 @@ _FOOTER_SIZE = 7
 
 
 # ---------------------------------------------------------------------------
-# Layout builder (pure; returns a named tree with rag / cag / footer leaves)
+# Verdict display helpers (pure; used by the TUI and by external callers)
+# ---------------------------------------------------------------------------
+
+
+def format_verdict_markers(
+    rag_missed: bool = False, cag_full_recall: bool = False
+) -> tuple[str, str]:
+    """Return (rag_marker, cag_marker) display strings from verdict booleans."""
+    rag_marker = "⚠ missed …" if rag_missed else ""
+    cag_marker = "✓ full recall" if cag_full_recall else ""
+    return rag_marker, cag_marker
+
+
+# ---------------------------------------------------------------------------
+# resilient_session coroutine bridge
+#
+# Declared as a plain coroutine (no yield) so unittest.mock.patch() detects
+# it as a coroutine function and creates AsyncMock.  AsyncMock awaits the
+# side_effect, which lets test helpers record kwargs before any iteration error.
+# In production the returned object is the real async generator from resilience.
+# ---------------------------------------------------------------------------
+
+
+async def resilient_session(cfg: Any, **kwargs: Any) -> Any:
+    """Return the resilient_session async generator for the given config."""
+    return _resilient_session_impl(cfg, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Layout builder (pure; returns a named tree with rag / cag / note / footer)
 # ---------------------------------------------------------------------------
 
 
@@ -32,40 +63,49 @@ def _build_layout() -> Layout:
     root = Layout()
     root.split_column(
         Layout(name="columns"),
+        Layout(name="note", size=1),
         Layout(name="footer", size=_FOOTER_SIZE),
     )
-    root["columns"].split_row(
-        Layout(name="rag"),
-        Layout(name="cag"),
-    )
+    root["columns"].split_row(Layout(name="rag"), Layout(name="cag"))
     root["rag"].split_column(
-        Layout(name="rag_header", size=_HEADER_SIZE),
-        Layout(name="rag_body"),
+        Layout(name="rag_header", size=_HEADER_SIZE), Layout(name="rag_body")
     )
     root["cag"].split_column(
-        Layout(name="cag_header", size=_HEADER_SIZE),
-        Layout(name="cag_body"),
+        Layout(name="cag_header", size=_HEADER_SIZE), Layout(name="cag_body")
     )
     return root
 
 
 # ---------------------------------------------------------------------------
-# TuiDriver — owns state, body buffers, and the one refresh path
+# Token adapter: single-arg TokenEvent → driver.on_token(side, partial)
+# ---------------------------------------------------------------------------
+
+
+def _token_adapter(driver: "TuiDriver") -> Callable:
+    def _cb(event: Any) -> None:
+        driver.on_token(getattr(event, "side", ""), getattr(event, "partial", ""))
+    return _cb
+
+
+# ---------------------------------------------------------------------------
+# TuiDriver — owns state, body buffers, note buffer, and the one refresh path
 # ---------------------------------------------------------------------------
 
 
 class TuiDriver:
-    """Owns the Layout, body buffers, and TuiState; drives the live display.
+    """Owns Layout, body buffers, note buffer, and TuiState; drives live display.
 
-    Two update paths:
-    * on_token(side, partial) — appends a streamed partial to the side buffer
+    Update paths:
+    * on_token(side, partial) — appends streamed partial to the side buffer
+    * on_note(msg)            — sets or clears the transient retry note
     * finalize(turn)          — overwrites buffers from TurnResult, applies state
-    Both paths are wired through refresh(live) which rebuilds all layout regions.
+    All paths render through refresh(live).
     """
 
     def __init__(self) -> None:
         self._rag_body = ""
         self._cag_body = ""
+        self._note: str | None = None
         self._state = TuiState()
         self._layout = _build_layout()
 
@@ -88,6 +128,11 @@ class TuiDriver:
         else:
             self._cag_body += partial
 
+    def on_note(self, msg: str | None) -> None:
+        """Set or clear the transient retry note; updates the layout immediately."""
+        self._note = msg
+        self._layout["note"].update(msg or "")
+
     def finalize(self, turn: Any) -> None:
         """Overwrite body buffers from TurnResult text and fold turn into state."""
         self._rag_body = turn.rag.text
@@ -101,22 +146,28 @@ class TuiDriver:
         self._layout["cag_header"].update(cag_header(self._state.cag_header))
         self._layout["cag_body"].update(panel_body(self._cag_body, "cag"))
         self._layout["footer"].update(footer_strip(self._state.footer))
+        self._layout["note"].update(self._note or "")
         live.refresh()
 
 
 # ---------------------------------------------------------------------------
-# Public async entrypoint (Cycle 5's cli.py will call this)
+# Public async entrypoint
 # ---------------------------------------------------------------------------
 
 
 async def run_tui(cfg: Any, *, retriever: Any = None) -> None:
-    """Stream TurnResults from run_session and update the TUI once per turn."""
+    """Drive resilient_session and update the TUI once per turn."""
     driver = TuiDriver()
-    with Live(
-        driver.layout, refresh_per_second=_REFRESH_PER_SECOND, screen=False
-    ) as live:
-        async for turn in run_session(
-            cfg, on_token=driver.on_token, retriever=retriever
-        ):
+
+    def factory(c, *, on_token):
+        return run_session(c, on_token=on_token, retriever=retriever)
+
+    with Live(driver.layout, refresh_per_second=_REFRESH_PER_SECOND,
+              screen=False) as live:
+        gen = await resilient_session(
+            cfg, on_token=_token_adapter(driver), on_note=driver.on_note,
+            session_factory=factory
+        )
+        async for turn in gen:
             driver.finalize(turn)
             driver.refresh(live)

@@ -70,14 +70,25 @@ class FooterVM:
 # ---------------------------------------------------------------------------
 
 
-def _read_verdict(verdict: Any) -> tuple[int, int]:
-    """Defensively extract (rag_missed, cag_full_recall) from any verdict shape."""
+def verdict_to_markers(verdict: Any) -> tuple[bool, bool]:
+    """Translate a Verdict's real fields into (rag_missed, cag_full_recall).
+
+    Truth table (per issue #20 comment):
+      more_complete=="cag" and not agree → (True, True)
+      more_complete=="cag" and agree → (False, True)
+      anything else / None → (False, False)
+    """
     if verdict is None:
-        return 0, 0
-    return (
-        int(bool(getattr(verdict, "rag_missed", False))),
-        int(bool(getattr(verdict, "cag_full_recall", False))),
-    )
+        return False, False
+    cag_wins = getattr(verdict, "more_complete", "") == "cag"
+    agree = bool(getattr(verdict, "agree", True))
+    return cag_wins and not agree, cag_wins
+
+
+def _read_verdict(verdict: Any) -> tuple[int, int]:
+    """Return (rag_missed, cag_full_recall) as ints for the TuiState accumulator."""
+    missed, recall = verdict_to_markers(verdict)
+    return int(missed), int(recall)
 
 
 def _rag_vm(turn: Any, cumulative_cost: float) -> RagHeaderVM:

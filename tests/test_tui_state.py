@@ -412,25 +412,27 @@ def test_when_verdict_none_applied_twice_then_counters_remain_zero():
     assert state.footer.cag_full_recall_count == 0
 
 
-def test_when_verdict_rag_missed_true_then_rag_miss_count_increments():
-    """rag_missed=True on verdict increments rag_miss_count by 1."""
+def test_when_cag_more_complete_and_not_agree_then_both_counters_increment():
+    """more_complete=='cag' and agree=False → rag_missed=True, cag_full_recall=True."""
 
     class _V:
-        rag_missed = True
-        cag_full_recall = False
+        agree = False
+        more_complete = "cag"
+        note = ""
 
     state = TuiState()
     state.apply(_turn(verdict=_V()))
     assert state.footer.rag_miss_count == 1
-    assert state.footer.cag_full_recall_count == 0
+    assert state.footer.cag_full_recall_count == 1
 
 
-def test_when_verdict_cag_full_recall_true_then_cag_count_increments():
-    """cag_full_recall=True on verdict increments cag_full_recall_count by 1."""
+def test_when_cag_more_complete_and_agree_then_only_cag_full_recall_increments():
+    """more_complete=='cag' and agree=True → rag_missed=False, cag_full_recall=True."""
 
     class _V:
-        rag_missed = False
-        cag_full_recall = True
+        agree = True
+        more_complete = "cag"
+        note = ""
 
     state = TuiState()
     state.apply(_turn(verdict=_V()))
@@ -438,10 +440,13 @@ def test_when_verdict_cag_full_recall_true_then_cag_count_increments():
     assert state.footer.rag_miss_count == 0
 
 
-def test_when_both_verdict_flags_true_then_both_counters_increment():
+def test_when_both_verdict_flags_signalled_then_both_counters_increment():
+    """more_complete=='cag', agree=False → rag_miss_count and cag_full_recall_count both 1."""
+
     class _V:
-        rag_missed = True
-        cag_full_recall = True
+        agree = False
+        more_complete = "cag"
+        note = ""
 
     state = TuiState()
     state.apply(_turn(verdict=_V()))
@@ -449,12 +454,13 @@ def test_when_both_verdict_flags_true_then_both_counters_increment():
     assert state.footer.cag_full_recall_count == 1
 
 
-def test_when_multiple_verdicts_miss_then_miss_count_accumulates():
-    """Miss count accumulates across multiple turns with rag_missed=True."""
+def test_when_multiple_cag_complete_verdicts_then_counts_accumulate():
+    """Miss/recall counts accumulate across multiple turns with more_complete=='cag'."""
 
     class _V:
-        rag_missed = True
-        cag_full_recall = True
+        agree = False
+        more_complete = "cag"
+        note = ""
 
     state = TuiState()
     state.apply(_turn(index=0, verdict=_V()))
@@ -467,7 +473,7 @@ def test_when_verdict_has_unknown_shape_then_no_exception_is_raised():
     """Verdict adapter is defensive: unexpected attribute shape must not raise."""
 
     class _WeirdVerdict:
-        # intentionally no rag_missed / cag_full_recall
+        # intentionally no agree / more_complete / note
         divergent = True
 
     state = TuiState()
@@ -477,10 +483,13 @@ def test_when_verdict_has_unknown_shape_then_no_exception_is_raised():
     assert state.footer.cag_full_recall_count == 0
 
 
-def test_when_verdict_rag_missed_false_then_miss_count_does_not_increment():
+def test_when_verdict_more_complete_is_rag_then_miss_count_does_not_increment():
+    """more_complete!='cag' → rag_missed=False, miss count unchanged."""
+
     class _V:
-        rag_missed = False
-        cag_full_recall = False
+        agree = False
+        more_complete = "rag"
+        note = ""
 
     state = TuiState()
     state.apply(_turn(verdict=_V()))
@@ -680,11 +689,12 @@ def test_cag_cache_read_total_equals_sum_of_cached_input_tokens(
 def test_rag_miss_count_equals_number_of_turns_with_rag_missed_true(
     n_misses: int, n_clean: int
 ) -> None:
-    """rag_miss_count increments once per turn with rag_missed=True, never for None."""
+    """rag_miss_count increments once per cag-wins+not-agree turn, never for None."""
 
     class _Miss:
-        rag_missed = True
-        cag_full_recall = False
+        agree = False
+        more_complete = "cag"
+        note = ""
 
     state = TuiState()
     for i in range(n_misses):
