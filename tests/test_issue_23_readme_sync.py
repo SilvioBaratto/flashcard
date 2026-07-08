@@ -45,15 +45,28 @@ def _iter_source_files():
 
 
 def _cli_help() -> str:
-    from typer.testing import CliRunner
+    """Return a terminal-independent string of the CLI's declared flags + defaults.
+
+    Scraping Typer's rendered ``--help`` is unreliable in CI: Rich truncates or
+    hides option names depending on the runner's (often tiny) terminal width.
+    Introspect the underlying Click command instead, so every option's long
+    names, its ``--no-x`` secondary form, and its default are always present.
+    """
+    import typer
     from flashcard.cli import app
 
-    # Force a wide terminal: Rich truncates long option names in the --help panel
-    # when the terminal is narrow, and CI runners report a very small width (~20
-    # cols), which hides flags. A fixed wide width verifies the flags are defined
-    # regardless of the runner's terminal size.
-    result = CliRunner().invoke(app, ["--help"], env={"COLUMNS": "200"})
-    return result.output
+    cmd = typer.main.get_command(app)
+    parts: list[str] = []
+    for p in getattr(cmd, "params", []):
+        parts.extend(getattr(p, "opts", []))
+        parts.extend(getattr(p, "secondary_opts", []))
+        parts.append(f"default={p.default!r}")
+    for sub_name, sub in (getattr(cmd, "commands", {}) or {}).items():
+        parts.append(sub_name)
+        for p in getattr(sub, "params", []):
+            parts.extend(getattr(p, "opts", []))
+            parts.extend(getattr(p, "secondary_opts", []))
+    return " ".join(parts)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
