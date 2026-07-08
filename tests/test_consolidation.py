@@ -76,7 +76,9 @@ async def test_when_runner_runs_a_turn_then_it_returns_turn_result():
     _patch_baml_streams(fake_baml)
 
     runner = Runner(config=config, baml_client=fake_baml, retriever=_make_retriever())
-    result = await runner.run_turn(question="What is the policy?", document="A short doc.")
+    result = await runner.run_turn(
+        question="What is the policy?", document="A short doc."
+    )
 
     assert isinstance(result, TurnResult), "Runner.run_turn must return a TurnResult"
     assert result.question == "What is the policy?", (
@@ -418,7 +420,9 @@ def _make_retriever(
     last_ctx: int | None = None,
     include_last: bool = False,
 ) -> _Retriever:
-    return _Retriever(last_scores=last_scores, last_ctx=last_ctx, include_last=include_last)
+    return _Retriever(
+        last_scores=last_scores, last_ctx=last_ctx, include_last=include_last
+    )
 
 
 def _make_verdict(
