@@ -9,3 +9,7 @@ script.md
 script_6.md
 .code-generator/
 graphify-out/
+
+# Python packaging
+*.egg-info/
+flashcard.egg-info/

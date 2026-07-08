@@ -10,8 +10,8 @@ client<llm> Gpt52 {
   options {
     model "gpt-5.2"
     api_key env.OPENAI_API_KEY
-    // NOTE: if gpt-5.2 chat-completions rejects `max_tokens`, switch the runtime
-    // ClientRegistry option to `max_completion_tokens` (see flashcard/runner.py).
+    // The output cap is set at runtime via the ClientRegistry as
+    // `max_completion_tokens` (gpt-5.x rejects `max_tokens`) — see runner._client_options.
   }
 }
 

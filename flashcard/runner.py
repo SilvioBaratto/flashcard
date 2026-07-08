@@ -60,14 +60,15 @@ def _to_model(model: Any) -> Model:
 def _client_options(model: Model, max_tokens: int) -> dict:
     """Options dict for BAML LLM client registration.
 
-    NOTE: gpt-5.x chat-completions may require ``max_completion_tokens`` instead of
-    ``max_tokens``; if the API rejects it, rename the key here. No temperature is
-    sent — gpt-5.2 may only allow the default.
+    gpt-5.x chat-completions rejects ``max_tokens`` (400 "Unsupported parameter …
+    Use 'max_completion_tokens' instead") — confirmed against the built request —
+    so the output cap is sent as ``max_completion_tokens``. No temperature is
+    sent; gpt-5.2 only allows the default.
     """
     return {
         "model": _MODEL_IDS[model],
         "api_key": os.environ["OPENAI_API_KEY"],
-        "max_tokens": max_tokens,
+        "max_completion_tokens": max_tokens,
     }
 
 
@@ -279,12 +280,18 @@ def _load_questions(cfg: Any) -> list[str]:
 
 
 def _default_retriever(document: str, chunk_size: int) -> Retriever:
-    """Build a retriever; prefer flashcard.rag, else the naive term-overlap one."""
+    """Build a retriever; prefer flashcard.rag, else the naive term-overlap one.
+
+    ``build_retriever`` raises ImportError when OPENAI_API_KEY is unset (by design),
+    so the call must sit inside the try — otherwise the intended graceful
+    degradation to the naive retriever never happens and the session crashes.
+    """
     try:
         from flashcard.rag import build_retriever  # noqa: WPS433
+
+        return build_retriever(document, chunk_size)
     except ImportError:
         return _NaiveRetriever(document, chunk_size)
-    return build_retriever(document, chunk_size)
 
 
 # --------------------------------------------------------------------------- #
@@ -433,9 +440,19 @@ class Runner:
         self._model = _to_model(getattr(resolved, "model", Model.GPT_52))
         self._document = _runner_document(resolved)
         self._baml_client = baml_client
+        # Registry carries the runtime model + max_completion_tokens cap; None in
+        # headless/test mode (no key) → static answer.baml clients are used.
+        self._registry = _safe_build_registry(resolved)
         self._retriever = retriever or _default_retriever(
             self._document, int(getattr(resolved, "chunk_size", 800))
         )
+
+    def _baml_options(self, collector: Any) -> dict:
+        """baml_options for a generation call: collector + optional client_registry."""
+        opts: dict[str, Any] = {"collector": collector}
+        if self._registry is not None:
+            opts["client_registry"] = self._registry
+        return opts
 
     async def _run_rag(self, question: str, b: Any, collector: Any) -> SideResult:
         chunks = await _await_retrieve(
@@ -449,7 +466,7 @@ class Runner:
             b,
             question=question,
             chunks=[c for _, c in chunks],
-            baml_options={"collector": collector},
+            baml_options=self._baml_options(collector),
         )
         text = await _drain_stream(stream)
         m = turn_metrics(collector)
@@ -475,6 +492,7 @@ class Runner:
             question=question,
             b=b,
             collector_factory=lambda: collector,
+            client_registry=self._registry,
         )
         try:
             text, m = raw
