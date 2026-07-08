@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "RAG vs CAG side-by-side demo CLI for OpenAI"
 requires-python = ">=3.11"
 dependencies = [
-    "baml-py>=0.87",
+    "baml-py==0.222.0",  # must match baml_src/generators.baml — the generated baml_client rejects a version mismatch
     "typer>=0.12",
     "rich>=13",
     "openai>=1.0",
