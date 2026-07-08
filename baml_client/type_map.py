@@ -16,5 +16,8 @@ from . import stream_types
 
 type_map = {
 
+    "types.Verdict": types.Verdict,
+    "stream_types.Verdict": stream_types.Verdict,
+
 
 }

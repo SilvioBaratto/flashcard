@@ -41,8 +41,13 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (0)
+# Generated classes (1)
 # #########################################################################
+
+class Verdict(BaseModel):
+    agree: bool = Field(description='True if RAG and CAG answers are substantively equivalent.')
+    more_complete: typing.Union[typing_extensions.Literal['rag'], typing_extensions.Literal['cag'], typing_extensions.Literal['tie']] = Field(description='Which answer covers more of the topic, or \'tie\'.')
+    note: str = Field(description='One-sentence explanation of the verdict.')
 
 # #########################################################################
 # Generated type aliases (0)

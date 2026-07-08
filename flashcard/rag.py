@@ -24,6 +24,7 @@ import numpy as np
 from flashcard.chunking import chunk_document
 from flashcard.embed import Embedder
 from flashcard.index import VectorIndex
+from flashcard.tokens import count_tokens
 
 # Default overlap: mirrors chunking._DEFAULT_OVERLAP but clamped below chunk_size.
 _DEFAULT_OVERLAP = 80
@@ -35,17 +36,22 @@ class EmbeddingRetriever:
     """Cosine retriever backed by a pre-built ``VectorIndex``.
 
     Attributes:
-        last_scores:       Similarity scores from the last ``retrieve`` call,
-                           sorted descending.
-        last_query_tokens: Token count reported by ``embed_fn`` for the last
-                           query.
+        last_scores:         ``(chunk_id, score)`` pairs from the last
+                             ``retrieve`` call, sorted by score descending.
+        last_query_tokens:   Token count reported by ``embed_fn`` for the last
+                             query embedding.
+        last_context_tokens: tiktoken count of the concatenated retrieved chunk
+                             texts (display-only; use Collector ``input_tokens``
+                             for billing — it includes the system prompt and
+                             template scaffolding).
     """
 
     def __init__(self, index: VectorIndex, embed_fn: EmbedFn) -> None:
         self._index = index
         self._embed_fn = embed_fn
-        self.last_scores: list[float] = []
+        self.last_scores: list[tuple[int, float]] = []
         self.last_query_tokens: int = 0
+        self.last_context_tokens: int = 0
 
     def retrieve(self, question: str, k: int) -> list[tuple[int, str]]:
         """Embed *question*, cosine-rank the index, return top-*k* pairs."""
@@ -53,8 +59,10 @@ class EmbeddingRetriever:
         self.last_query_tokens = token_count
         query_vec = np.array(vecs[0], dtype=np.float64)
         matches = self._index.search(query_vec, k)
-        self.last_scores = [m.score for m in matches]
-        return [(m.chunk_id, m.text) for m in matches]
+        self.last_scores = [(m.chunk_id, m.score) for m in matches]
+        pairs = [(m.chunk_id, m.text) for m in matches]
+        self.last_context_tokens = count_tokens(" ".join(m.text for m in matches))
+        return pairs
 
 
 def build_retriever(

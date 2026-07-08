@@ -35,6 +35,12 @@ class LlmResponseParser:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="AnswerRAG", llm_response=llm_response, mode="request")
         return typing.cast(str, __result__)
 
+    def CompareAnswers(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.Verdict:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="CompareAnswers", llm_response=llm_response, mode="request")
+        return typing.cast(types.Verdict, __result__)
+
     
 
 class LlmStreamParser:
@@ -54,5 +60,11 @@ class LlmStreamParser:
     ) -> str:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="AnswerRAG", llm_response=llm_response, mode="stream")
         return typing.cast(str, __result__)
+
+    def CompareAnswers(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.Verdict:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="CompareAnswers", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.Verdict, __result__)
 
     

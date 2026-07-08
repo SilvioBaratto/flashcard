@@ -80,6 +80,21 @@ async def _iter_turns(
     _clear_note(on_note, note_active)
 
 
+async def run_session(
+    config: Any, baml_client: Any, retriever: Any, document: str, questions: list
+):
+    """Async-generate TurnResults via the unified Runner path.
+
+    Positional args match the signature expected by test_consolidation.py and
+    any external callers that drive resilience.run_session directly.
+    """
+    from flashcard.runner import Runner  # lazy — avoids import-time circular dep
+
+    runner = Runner(config=config, baml_client=baml_client, retriever=retriever)
+    for i, q in enumerate(questions):
+        yield await runner.run_turn(question=q, document=document, index=i)
+
+
 def _default_factory() -> Callable:
     from flashcard.runner import (
         run_session,

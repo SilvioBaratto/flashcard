@@ -23,8 +23,13 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (0)
+# Generated classes (1)
 # #########################################################################
+
+class Verdict(BaseModel):
+    agree: typing.Optional[bool] = Field(default=None, description='True if RAG and CAG answers are substantively equivalent.')
+    more_complete: typing.Optional[typing.Union[typing_extensions.Literal['rag'], typing_extensions.Literal['cag'], typing_extensions.Literal['tie']]] = Field(default=None, description='Which answer covers more of the topic, or \'tie\'.')
+    note: typing.Optional[str] = Field(default=None, description='One-sentence explanation of the verdict.')
 
 # #########################################################################
 # Generated type aliases (0)

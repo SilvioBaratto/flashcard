@@ -4,9 +4,11 @@ Source-blind tests for flashcard.rag.build_retriever (Issue #9).
 Derived entirely from the acceptance criteria — no implementation source was read.
 All tests use FakeEmbedder to avoid real OpenAI calls.
 
-Attribute contract assumed from criteria:
-    retriever.last_scores       -> list[float] after retrieve(); descending order
+Attribute contract (updated by issue #11 — last_scores now carries chunk_ids):
+    retriever.last_scores       -> list[tuple[int, float]] after retrieve();
+                                   (chunk_id, score) pairs sorted by score desc
     retriever.last_query_tokens -> int after retrieve(); token count of the last query embed
+    retriever.last_context_tokens -> int after retrieve(); tiktoken count of retrieved texts
 """
 
 from __future__ import annotations
@@ -209,13 +211,13 @@ def test_when_retrieve_called_then_chunk_with_highest_cosine_similarity_is_first
 
 def test_when_retrieve_called_then_last_scores_are_sorted_descending():
     """
-    last_scores exposes the similarity values used for ranking; they must be descending.
+    last_scores is a list of (chunk_id, score) pairs sorted by score descending.
     """
     retriever = build_retriever(
         TINY_DOC, chunk_size=CHUNK_SIZE, embed_fn=FakeEmbedder()
     )
     retriever.retrieve("test question", k=3)
-    scores = retriever.last_scores
+    scores = [s for _, s in retriever.last_scores]
     assert scores == sorted(scores, reverse=True), (
         "last_scores must be sorted in descending cosine-similarity order"
     )
@@ -224,7 +226,8 @@ def test_when_retrieve_called_then_last_scores_are_sorted_descending():
 @given(st.integers(min_value=1, max_value=4))
 def test_when_retrieve_called_with_any_k_then_last_scores_are_sorted_descending(k):
     """
-    Ordering invariant: last_scores is sorted descending regardless of k.
+    Ordering invariant: last_scores (chunk_id, score) pairs are sorted by
+    score descending regardless of k.
     """
     retriever = build_retriever(
         TINY_DOC, chunk_size=CHUNK_SIZE, embed_fn=FakeEmbedder()
@@ -232,8 +235,8 @@ def test_when_retrieve_called_with_any_k_then_last_scores_are_sorted_descending(
     results = retriever.retrieve("any question", k=k)
     if not results:
         return  # trivially satisfied when no chunks exist
-    scores = retriever.last_scores
-    assert len(scores) == len(results)
+    scores = [s for _, s in retriever.last_scores]
+    assert len(retriever.last_scores) == len(results)
     assert scores == sorted(scores, reverse=True)
 
 
@@ -322,12 +325,13 @@ def test_when_retrieve_called_then_last_scores_length_equals_result_length():
 
 
 def test_when_retrieve_called_then_last_scores_are_floats_within_cosine_range():
-    """Cosine similarity is bounded in [-1.0, 1.0]."""
+    """Each entry in last_scores is a (chunk_id: int, score: float) pair with score in [-1, 1]."""
     retriever = build_retriever(
         TINY_DOC, chunk_size=CHUNK_SIZE, embed_fn=FakeEmbedder()
     )
     retriever.retrieve("any question", k=2)
-    for score in retriever.last_scores:
+    for chunk_id, score in retriever.last_scores:
+        assert isinstance(chunk_id, int), f"chunk_id must be int, got {type(chunk_id)}"
         assert isinstance(score, float), f"score must be float, got {type(score)}"
         assert -1.0 - 1e-6 <= score <= 1.0 + 1e-6, (
             f"Cosine similarity must be in [-1, 1], got {score}"

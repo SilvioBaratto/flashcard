@@ -14,16 +14,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import tiktoken
-
 import flashcard.pricing as _p
-
-_ENCODING = "o200k_base"  # tiktoken encoding for gpt-5.x / gpt-4o family
-
-
-def count_tokens(text: str) -> int:
-    """Count tokens in *text* using tiktoken o200k_base (gpt-5.x / gpt-4o)."""
-    return len(tiktoken.get_encoding(_ENCODING).encode(text))
+from flashcard.tokens import count_tokens  # encoding: o200k_base (gpt-5.x/gpt-4o)
 
 
 @dataclass(frozen=True)

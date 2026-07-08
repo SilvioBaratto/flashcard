@@ -11,7 +11,8 @@ from dataclasses import dataclass
 
 import tiktoken
 
-_ENCODING = "o200k_base"
+from flashcard.tokens import DEFAULT_ENCODING as _ENCODING
+
 _DEFAULT_OVERLAP = 80
 
 
